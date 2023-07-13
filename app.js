@@ -11,6 +11,10 @@ app.get("/", (req, res) => {
   res.send(`<h1>We are live</h1>`)
 });
 
+app.get("/about", (req, res) => {
+  res.send(`<h1>We are live</h1>`)
+});
+
 // ? imported routes
 const authRoute = require("./routes/authRoutes")
 
