@@ -2,11 +2,10 @@ const mongoose = require("mongoose")
 
 // ? Define the user schema
 const userSchema = new mongoose.Schema({
-    username: {
+    userName: {
         type: String,
         required: true,
-        unique: true,
-        lowercase: true,
+        unique: true
     },
     firstName: {
         type: String,
@@ -23,8 +22,7 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true,
-        lowercase: true,
+        unique: true
     },
     password: {
         type: String,
