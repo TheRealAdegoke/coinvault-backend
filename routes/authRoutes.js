@@ -2,17 +2,27 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const router = express.Router();
 const User = require("../model/userModel");
+const nodemailer = require("nodemailer");
 
-// ? Email validation regex pattern
+// Email validation regex pattern
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// ? Username validation regex
+// Username validation regex
 const usernameRegex = /^[a-z0-9]+$/i;
+
+// Map to store verification codes and their expiration times
+const verificationCodes = new Map();
 
 // Registration route
 router.post("/signup", async (req, res) => {
   try {
     const { userName, firstName, lastName, pin, email, password } = req.body;
+
+    // Generate a random 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set verification code expiration time to 2 minutes
+    const expirationTime = Date.now() + 2 * 60 * 1000; // Current time + 2 minutes
 
     // Check if all input fields are filled
     if (!userName || !firstName || !lastName || !pin || !email || !password) {
@@ -23,6 +33,7 @@ router.post("/signup", async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).send({ error: "Invalid email address" });
     }
+
     // Check if the username already exists
     const existingUsername = await User.findOne({ userName });
     if (existingUsername) {
@@ -35,18 +46,22 @@ router.post("/signup", async (req, res) => {
       return res.status(400).send({ error: "Email already exists" });
     }
 
-    // username regex 
+    // Check if the username is valid
     if (userName.length < 4 || userName.length > 20) {
-      return res.status(400).send("Username must be between 4 and 20 characters long")
+      return res
+        .status(400)
+        .send({ error: "Username must be between 4 and 20 characters long" });
     }
 
     if (Number(userName) || Number(userName) === 0) {
-      return res.status(400).send("Username cannot contain only numbers")
+      return res.status(400).send({ error: "Username cannot contain only numbers" });
     }
 
-    const validUsername = userName.match(usernameRegex)
+    const validUsername = userName.match(usernameRegex);
     if (!validUsername) {
-      return res.status(400).send("Username can only contain letters and numbers")
+      return res
+        .status(400)
+        .send({ error: "Username can only contain letters and numbers" });
     }
 
     // Check if the password is at least 6 characters long
@@ -67,13 +82,161 @@ router.post("/signup", async (req, res) => {
       pin: hashedPassword,
       email,
       password: hashedPassword,
+      verificationCode,
     });
 
     // Save the user to the database
     await newUser.save();
-    res.status(200).send({ message: "User registered successfully" });
+
+    // Store the verification code and its expiration time
+    verificationCodes.set(verificationCode, expirationTime);
+
+    // Send the verification code to the user's email address
+    const transporter = nodemailer.createTransport({
+      // Configure the email service provider details
+      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: "coinvault322@gmail.com",
+        pass: "qignyifknddapgiw",
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    const mailOptions = {
+      from: "coinvault322@gmail.com",
+      to: email,
+      subject: "Email Verification",
+      text: `Hey there, ${userName},\n\nThank you for registering with CoinVault!. To complete the registration process, please use the following verification code: ${verificationCode}\n\nBest regards,\nCoinVault Team`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending verification email:", error);
+        res.status(500).send({ error: "Internal server error" });
+      } else {
+        res.status(200).send({ message: "User registered successfully" });
+      }
+    });
   } catch (error) {
     console.error("Error registering user:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+// Verification route
+router.post("/verify-email", async (req, res) => {
+  try {
+    const { verificationCode } = req.body;
+
+    // Check if the verification code is provided
+    if (!verificationCode) {
+      return res.status(400).send({ error: "Verification code is required" });
+    }
+
+    // Check if the verification code exists and is not expired
+    const expirationTime = verificationCodes.get(verificationCode);
+    if (!expirationTime || Date.now() > expirationTime) {
+      return res.status(400).send({ error: "Invalid or expired verification code" });
+    }
+
+    // Find the user by verification status and verification code
+    const user = await User.findOne({
+      verificationCode: String(verificationCode),
+    });
+
+    if (!user) {
+      return res.status(400).send({ error: "Invalid verification code" });
+    }
+
+    // Update the user's verification status
+    user.isVerified = true;
+    user.verificationCode = null;
+    await user.save();
+
+    // Remove the verification code from the map
+    verificationCodes.delete(verificationCode);
+
+    res.status(200).send({ message: "Email verified" });
+  } catch (error) {
+    console.error("Error verifying email:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+// Resend verification code route
+router.post("/resend-verification-code", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the email is provided
+    if (!email) {
+      return res.status(400).send({ error: "Email is required" });
+    }
+
+    // Check if the email is valid
+    if (!emailRegex.test(email)) {
+      return res.status(400).send({ error: "Invalid email address" });
+    }
+
+    // Find the user by email
+    const user = await User.findOne({ email });
+
+    // Check if the user exists
+    if (!user) {
+      return res.status(400).send({ error: "User not found" });
+    }
+
+    // Generate a new verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set verification code expiration time to 2 minutes
+    const expirationTime = Date.now() + 2 * 60 * 1000; // Current time + 2 minutes
+
+    // Update the user's verification code and its expiration time
+    user.verificationCode = verificationCode;
+    await user.save();
+
+    // Store the new verification code and its expiration time
+    verificationCodes.set(verificationCode, expirationTime);
+
+    // Send the new verification code to the user's email address
+    const transporter = nodemailer.createTransport({
+      // Configure the email service provider details
+      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: "coinvault322@gmail.com",
+        pass: "qignyifknddapgiw",
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    const mailOptions = {
+      from: "coinvault322@gmail.com",
+      to: email,
+      subject: "Email Verification",
+      text: `Hey there, ${user.userName},\n\nWe have resent the verification code to complete your registration with CoinVault. Please use the following verification code: ${verificationCode}\n\nBest regards,\nCoinVault Team`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending verification email:", error);
+        res.status(500).send({ error: "Internal server error" });
+      } else {
+        res.status(200).send({ message: "Verification code resent successfully" });
+      }
+    });
+  } catch (error) {
+    console.error("Error resending verification code:", error);
     res.status(500).send({ error: "Internal server error" });
   }
 });
