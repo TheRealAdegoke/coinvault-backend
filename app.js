@@ -1,10 +1,15 @@
 const express = require("express")
 const app = express()
+const cors = require("cors")
 const connectDB = require("./Database/connect")
 require("dotenv").config()
 const port = process.env.PORT || 8080
 
 app.use(express.json());
+app.use(cors({
+    origin: ["https://coinvault.onrender.com/", "https://www.google.com/", "http://localhost:5173"],
+    methods: ['GET','POST','DELETE','UPDATE','PUT','PATCH']
+}))
 
 
 // ? api endPoint
