@@ -8,7 +8,6 @@ const port = process.env.PORT || 8080
 app.use(express.json());
 app.use(cors({
     origin: ["https://coinvault.onrender.com/", "https://www.google.com/", "http://localhost:5173"],
-    credentials: true,
     methods: ['GET','POST','DELETE','UPDATE','PUT','PATCH']
 }))
 
