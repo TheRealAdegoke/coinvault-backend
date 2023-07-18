@@ -92,9 +92,36 @@ router.post("/signup", async (req, res) => {
     verificationCodes.set(verificationCode, expirationTime);
 
     // Send the verification code to the user's email address
-    sendVerificationEmail(email, userName, verificationCode);
+    const transporter = nodemailer.createTransport({
+      // Configure the email service provider details
+      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: "coinvault322@gmail.com",
+        pass: "qignyifknddapgiw",
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
 
-    res.status(200).send({ message: "User registered successfully" });
+    const mailOptions = {
+      from: "coinvault322@gmail.com",
+      to: email,
+      subject: "Email Verification",
+      text: `Hey there, ${userName},\n\nThank you for registering with CoinVault!. To complete the registration process, please use the following verification code: ${verificationCode}\n\nBest regards,\nCoinVault Team`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending verification email:", error);
+        res.status(500).send({ error: "Internal server error" });
+      } else {
+        res.status(200).send({ message: "User registered successfully" });
+      }
+    });
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).send({ error: "Internal server error" });
@@ -178,18 +205,6 @@ router.post("/resend-verification-code", async (req, res) => {
     verificationCodes.set(verificationCode, expirationTime);
 
     // Send the new verification code to the user's email address
-    sendVerificationEmail(email, user.userName, verificationCode);
-
-    res.status(200).send({ message: "Verification code resent successfully" });
-  } catch (error) {
-    console.error("Error resending verification code:", error);
-    res.status(500).send({ error: "Internal server error" });
-  }
-});
-
-// Function to send the verification email
-async function sendVerificationEmail(email, userName, verificationCode) {
-  try {
     const transporter = nodemailer.createTransport({
       // Configure the email service provider details
       service: "gmail",
@@ -197,8 +212,8 @@ async function sendVerificationEmail(email, userName, verificationCode) {
       port: 465,
       secure: true,
       auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
+        user: "coinvault322@gmail.com",
+        pass: "qignyifknddapgiw",
       },
       tls: {
         rejectUnauthorized: false,
@@ -206,17 +221,24 @@ async function sendVerificationEmail(email, userName, verificationCode) {
     });
 
     const mailOptions = {
-      from: process.env.EMAIL_USERNAME,
+      from: "coinvault322@gmail.com",
       to: email,
       subject: "Email Verification",
-      text: `Hey there, ${userName},\n\nThank you for registering with CoinVault!. To complete the registration process, please use the following verification code: ${verificationCode}\n\nBest regards,\nCoinVault Team`,
+      text: `Hey there, ${user.userName},\n\nWe have resent the verification code to complete your registration with CoinVault. Please use the following verification code: ${verificationCode}\n\nBest regards,\nCoinVault Team`,
     };
 
-    await transporter.sendMail(mailOptions);
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending verification email:", error);
+        res.status(500).send({ error: "Internal server error" });
+      } else {
+        res.status(200).send({ message: "Verification code resent successfully" });
+      }
+    });
   } catch (error) {
-    console.error("Error sending verification email:", error);
-    throw new Error("Failed to send verification email");
+    console.error("Error resending verification code:", error);
+    res.status(500).send({ error: "Internal server error" });
   }
-}
+});
 
 module.exports = router;
