@@ -1,6 +1,6 @@
 const express = require("express")
 const app = express()
-const connectDB = require("./DataBase/connect")
+const connectDB = require("./Database/connect")
 require("dotenv").config()
 const port = process.env.PORT || 8080
 
