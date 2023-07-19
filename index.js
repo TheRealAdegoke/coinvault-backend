@@ -15,13 +15,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH']
 }));
 
+const authRoute = require("./routes/authRoutes");
+
 // API endpoint
-app.get("/", (req, res) => {
+app.get("/", authRoute, (req, res) => {
   res.send("<h1>We are live</h1>");
 });
 
 // Imported routes
-const authRoute = require("./routes/authRoutes");
 app.use("/v1/auth", authRoute);
 
 const start = async () => {
