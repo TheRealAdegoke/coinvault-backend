@@ -4,6 +4,16 @@ const router = express.Router();
 const User = require("../model/userModel");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken")
+const crypto = require("crypto")
+
+// Generate a secure JWT secret
+const generateJWTSecret = () => {
+  const secret = crypto.randomBytes(64).toString('hex');
+  return secret;
+};
+
+// Set the JWT secret
+const JWT_SECRET = generateJWTSecret();
 
 // Email validation regex pattern
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -252,7 +262,7 @@ router.post("/v1/auth/login", async (req, res) => {
     }
 
     // Create and sign a JSON Web Token (JWT)
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
       expiresIn: "1h", // Token expiration time
     });
 
