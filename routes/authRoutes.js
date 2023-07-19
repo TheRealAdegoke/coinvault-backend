@@ -14,7 +14,7 @@ const usernameRegex = /^[a-z0-9]+$/i;
 const verificationCodes = new Map();
 
 // Registration route
-router.post("/signup", async (req, res) => {
+router.post("/v1/auth/signup", async (req, res) => {
   try {
     const { userName, firstName, lastName, pin, email, password } = req.body;
 
@@ -102,7 +102,7 @@ router.post("/signup", async (req, res) => {
 });
 
 // Verification route
-router.post("/verify-email", async (req, res) => {
+router.post("/v1/auth/verify-email", async (req, res) => {
   try {
     const { verificationCode } = req.body;
 
@@ -142,7 +142,7 @@ router.post("/verify-email", async (req, res) => {
 });
 
 // Resend verification code route
-router.post("/resend-verification-code", async (req, res) => {
+router.post("/v1/auth/resend-verification-code", async (req, res) => {
   try {
     const { email } = req.body;
 

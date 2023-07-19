@@ -22,7 +22,7 @@ app.get("/", (req, res) => {
   res.send("<h1>We are live</h1>");
 });
 
-app.use("/v1/auth", authRoute);
+app.use("/", authRoute);
 
 const port = process.env.PORT || 8080;
 
