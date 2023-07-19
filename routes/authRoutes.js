@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const router = express.Router();
 const User = require("../model/userModel");
 const nodemailer = require("nodemailer");
+const jwt = require("jsonwebtoken")
 
 // Email validation regex pattern
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -218,5 +219,48 @@ async function sendVerificationEmail(email, userName, verificationCode) {
     throw new Error("Failed to send verification email");
   }
 }
+
+// Login route
+router.post("/v1/auth/login", async (req, res) => {
+  try {
+    const { userName, password } = req.body;
+
+    // Check if the username and password are provided
+    if (!userName || !password) {
+      return res.status(400).send({ error: "Please provide username and password" });
+    }
+
+    // Find the user by the provided username
+    const user = await User.findOne({ userName });
+
+    // Check if the user exists
+    if (!user) {
+      return res.status(401).send({ error: "Invalid username or password" });
+    }
+
+    // Compare the provided password with the stored password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    // Check if the password is valid
+    if (!isPasswordValid) {
+      return res.status(401).send({ error: "Invalid username or password" });
+    }
+
+    // Check if the user is verified
+    if (!user.isVerified) {
+      return res.status(401).send({ error: "Please verify your email address" });
+    }
+
+    // Create and sign a JSON Web Token (JWT)
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h", // Token expiration time
+    });
+
+    res.status(200).send({ token });
+  } catch (error) {
+    console.error("Error logging in:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
 
 module.exports = router;
