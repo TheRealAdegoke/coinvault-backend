@@ -1,26 +1,30 @@
-// app.js
-
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./Database/connect");
 require("dotenv").config();
-
 const app = express();
-const port = process.env.PORT || 8080;
+const cookieParser = require("cookie-parser")
 
+app.use(cookieParser())
 app.use(express.json());
+
 app.use(cors({
-  origin: ["https://coinvault.onrender.com/", "https://www.google.com/", "http://localhost:5173"],
-  credentials: true,
-  methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH']
+     origin: ['https://coinvault.onrender.com', 'https://www.google.com/',"http://localhost:5173"],
+     methods: ['GET','POST','DELETE','UPDATE','PUT','PATCH']
 }));
+
 
 const authRoute = require("./routes/authRoutes");
 
+
 // API endpoint
-app.get("/:v1/auth", authRoute, (req, res) => {
+app.get("/", (req, res) => {
   res.send("<h1>We are live</h1>");
 });
+
+app.use("/v1/auth", authRoute);
+
+const port = process.env.PORT || 8080;
 
 const start = async () => {
   try {
