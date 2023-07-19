@@ -14,7 +14,7 @@ const usernameRegex = /^[a-z0-9]+$/i;
 const verificationCodes = new Map();
 
 // Registration route
-router.post("/signup", async (req, res) => {
+router.post("/:signup", async (req, res) => {
   try {
     const { userName, firstName, lastName, pin, email, password } = req.body;
 
