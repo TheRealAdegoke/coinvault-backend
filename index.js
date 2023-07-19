@@ -18,12 +18,9 @@ app.use(cors({
 const authRoute = require("./routes/authRoutes");
 
 // API endpoint
-app.get("/", authRoute, (req, res) => {
+app.get("/:v1/auth", authRoute, (req, res) => {
   res.send("<h1>We are live</h1>");
 });
-
-// Imported routes
-app.use("/v1/auth", authRoute);
 
 const start = async () => {
   try {
