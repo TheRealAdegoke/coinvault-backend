@@ -175,6 +175,11 @@ router.post("/v1/auth/resend-verification-code", async (req, res) => {
       return res.status(400).send({ error: "User not found" });
     }
 
+    // Check if the user is already verified
+    if (user.isVerified) {
+      return res.status(400).send({ error: "Email is already verified" });
+    }
+
     // Generate a new verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -272,5 +277,7 @@ router.post("/v1/auth/login", async (req, res) => {
     res.status(500).send({ error: "Internal server error" });
   }
 });
+
+
 
 module.exports = router;
