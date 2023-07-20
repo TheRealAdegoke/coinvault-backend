@@ -279,5 +279,143 @@ router.post("/v1/auth/login", async (req, res) => {
 });
 
 
+// Map to store reset password tokens and their expiration times
+const resetPasswordTokens = new Map();
+
+// Route to handle forgotten password request
+router.post("/v1/auth/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the email is provided
+    if (!email) {
+      return res.status(400).send({ error: "Email is required" });
+    }
+
+    // Check if the email is valid
+    if (!emailRegex.test(email)) {
+      return res.status(400).send({ error: "Invalid email address" });
+    }
+
+    // Find the user by email
+    const user = await User.findOne({ email });
+
+    // Check if the user exists
+    if (!user) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    // Generate a random token for reset password
+    const token = crypto.randomBytes(32).toString("hex");
+
+    // Set token expiration time to 3 minutes
+    const expirationTime = Date.now() + 3 * 60 * 1000; // Current time + 3 minutes
+
+    // Store the reset password token and its expiration time
+    resetPasswordTokens.set(token, {
+      userId: user._id,
+      expirationTime,
+    });
+
+    // Send the reset password link to the user's email address
+    sendResetPasswordEmail(email, user.userName, token);
+
+    res.status(200).send({ message: "Reset password link sent successfully" });
+  } catch (error) {
+    console.error("Error sending reset password link:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+// Function to send the reset password email
+async function sendResetPasswordEmail(email, userName, token) {
+  try {
+    const transporter = nodemailer.createTransport({
+      // Configure the email service provider details
+      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    const resetPasswordLink = `https://coin-vault.vercel.app/resetpassword?token=${token}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USERNAME,
+      to: email,
+      subject: "Reset Password",
+      text: `Hey there, ${userName},\n\nTo reset your password, please click on the link below:\n\n${resetPasswordLink}\n\nThis link will expire in 3 minutes.\n\nBest regards,\nCoinVault Team`,
+    };
+
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending reset password email:", error);
+    throw new Error("Failed to send reset password email");
+  }
+}
+
+// Route to handle reset password action
+router.post("/v1/auth/reset-password", async (req, res) => {
+  try {
+    const { token, password, confirmPassword } = req.body;
+
+    // Check if the token and new password are provided
+    if (!token || !password) {
+      return res
+        .status(400)
+        .send({ error: "Token and password are required" });
+    }
+
+    // Check if the token is valid and not expired
+    const resetTokenData = resetPasswordTokens.get(token);
+    if (!resetTokenData || Date.now() > resetTokenData.expirationTime) {
+      resetPasswordTokens.delete(token);
+      return res.status(400).send({ error: "Invalid or expired token" });
+    }
+
+    // Find the user by userId
+    const user = await User.findById(resetTokenData.userId);
+
+    // Check if the user exists
+    if (!user) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    // Check if the password and confirm password match
+    if (password !== confirmPassword) {
+      return res.status(400).send({ error: "Passwords do not match" });
+    }
+
+    // Check if the password is at least 6 characters long
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .send({ error: "Password should be at least 6 characters long" });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    // Remove the reset password token from the map
+    resetPasswordTokens.delete(token);
+
+    res.status(200).send({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
 
 module.exports = router;
