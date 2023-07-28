@@ -105,7 +105,7 @@ router.post("/v1/auth/signup", async (req, res) => {
     // Send the verification code to the user's email address
     sendVerificationEmail(email, userName, verificationCode);
 
-    res.status(200).send({ message: "User registered successfully", firstName: newUser.firstName, lastName: newUser.lastName });
+    res.status(200).send({ message: "User registered successfully" });
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).send({ error: "Internal server error" });
@@ -145,12 +145,19 @@ router.post("/v1/auth/verify-email", async (req, res) => {
     // Remove the verification code from the map
     verificationCodes.delete(verificationCode);
 
-    res.status(200).send({ message: "Email verified" });
+    // Create and sign a JSON Web Token (JWT)
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+      expiresIn: "1h", // Token expiration time
+    });
+
+    // Return the user's data and JWT token
+    res.status(200).send({ token, firstName: user.firstName, lastName: user.lastName });
   } catch (error) {
     console.error("Error verifying email:", error);
     res.status(500).send({ error: "Internal server error" });
   }
 });
+
 
 // Resend verification code route
 router.post("/v1/auth/resend-verification-code", async (req, res) => {
