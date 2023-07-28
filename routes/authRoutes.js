@@ -418,9 +418,9 @@ router.post("/v1/auth/reset-password", async (req, res) => {
 });
 
 // Function to fetch user data from the database
-async function fetchUserDataFromDatabase(userName) {
+async function fetchUserDataFromDatabase(userId) {
   try {
-    const user = await User.findOne({ userName });
+    const user = await User.findById(userId);
 
     if (!user) {
       throw new Error("User not found");
@@ -436,13 +436,13 @@ async function fetchUserDataFromDatabase(userName) {
 // Dashboard route to fetch user data
 router.get("/v1/auth/user", async (req, res) => {
   try {
-    // Retrieve the userName from the authenticated user's JWT token
+    // Retrieve the userId from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
     const decodedToken = jwt.verify(token, JWT_SECRET);
-    const userName = decodedToken.userId;
+    const userId = decodedToken.userId;
 
     // Fetch the user data from the database
-    const userData = await fetchUserDataFromDatabase(userName);
+    const userData = await fetchUserDataFromDatabase(userId);
 
     res.json(userData);
   } catch (error) {
