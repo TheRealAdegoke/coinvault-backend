@@ -105,7 +105,7 @@ router.post("/v1/auth/signup", async (req, res) => {
     // Send the verification code to the user's email address
     sendVerificationEmail(email, userName, verificationCode);
 
-    res.status(200).send({ message: "User registered successfully" });
+    res.status(200).send({ message: "User registered successfully", firstName: newUser.firstName, lastName: newUser.lastName });
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).send({ error: "Internal server error" });
