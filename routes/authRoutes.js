@@ -158,7 +158,6 @@ router.post("/v1/auth/verify-email", async (req, res) => {
   }
 });
 
-
 // Resend verification code route
 router.post("/v1/auth/resend-verification-code", async (req, res) => {
   try {
@@ -439,6 +438,25 @@ async function fetchUserDataFromDatabase(userId) {
     throw error;
   }
 }
+
+// Route to fetch user data after successful email verification
+router.get("/v1/auth/dashboard", async (req, res) => {
+  try {
+    // Retrieve the userId from the authenticated user's JWT token
+    const token = req.header("Authorization").replace("Bearer ", "");
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const userId = decodedToken.userId;
+
+    // Fetch the user data from the database
+    const userData = await fetchUserDataFromDatabase(userId);
+
+    res.json(userData);
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 // Dashboard route to fetch user data
 router.get("/v1/auth/user", async (req, res) => {
