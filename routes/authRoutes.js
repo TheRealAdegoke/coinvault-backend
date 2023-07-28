@@ -417,5 +417,38 @@ router.post("/v1/auth/reset-password", async (req, res) => {
   }
 });
 
+// Function to fetch user data from the database
+async function fetchUserDataFromDatabase(userName) {
+  try {
+    const user = await User.findOne({ userName });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return { firstName: user.firstName, lastName: user.lastName };
+  } catch (error) {
+    console.error("Error fetching user data from the database:", error);
+    throw error;
+  }
+}
+
+// Dashboard route to fetch user data
+router.get("/v1/auth//user", async (req, res) => {
+  try {
+    // Retrieve the userName from the authenticated user's JWT token
+    const token = req.header("Authorization").replace("Bearer ", "");
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const userName = decodedToken.userId;
+
+    // Fetch the user data from the database
+    const userData = await fetchUserDataFromDatabase(userName);
+
+    res.json(userData);
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 module.exports = router;
