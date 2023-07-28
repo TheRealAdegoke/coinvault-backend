@@ -434,7 +434,7 @@ async function fetchUserDataFromDatabase(userName) {
 }
 
 // Dashboard route to fetch user data
-router.get("/v1/auth//user", async (req, res) => {
+router.get("/v1/auth/user", async (req, res) => {
   try {
     // Retrieve the userName from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
