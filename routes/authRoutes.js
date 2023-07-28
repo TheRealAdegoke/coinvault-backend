@@ -151,7 +151,7 @@ router.post("/v1/auth/verify-email", async (req, res) => {
     });
 
     // Return the user's data and JWT token
-    res.status(200).send({ token, firstName: user.firstName, lastName: user.lastName });
+    res.status(200).send({ message: "Email verified" });
   } catch (error) {
     console.error("Error verifying email:", error);
     res.status(500).send({ error: "Internal server error" });
