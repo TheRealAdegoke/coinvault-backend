@@ -58,10 +58,10 @@ router.post("/v1/auth/signup", async (req, res) => {
     }
 
     // Check if the username is valid
-    if (userName.length < 4 || userName.length > 20) {
+    if (userName.length < 4 || userName.length > 25) {
       return res
         .status(400)
-        .send({ error: "Username must be between 4 and 20 characters long" });
+        .send({ error: "Username must be between 4 and 25 characters long" });
     }
 
     if (Number(userName) || Number(userName) === 0) {
