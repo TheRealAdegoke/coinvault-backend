@@ -183,7 +183,7 @@ router.post("/v1/auth/resend-verification-code", async (req, res) => {
 
     // Check if the user is already verified
     if (user.isVerified) {
-      return res.status(400).send({ error: "Email is already verified" });
+      return res.status(400).send({ error: "Email is already verified Successfully" });
     }
 
     // Generate a new verification code
