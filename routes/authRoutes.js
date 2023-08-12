@@ -2,13 +2,14 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const router = express.Router();
 const User = require("../model/userModel");
+const UserWallet = require("../model/walletModel");
 const nodemailer = require("nodemailer");
-const jwt = require("jsonwebtoken")
-const crypto = require("crypto")
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 // Generate a secure JWT secret
 const generateJWTSecret = () => {
-  const secret = crypto.randomBytes(64).toString('hex');
+  const secret = crypto.randomBytes(64).toString("hex");
   return secret;
 };
 
@@ -24,13 +25,28 @@ const usernameRegex = /^[a-z0-9]+$/i;
 // Map to store verification codes and their expiration times
 const verificationCodes = new Map();
 
+// Initialize the account number sequence (starts from a defined value)
+let accountNumberCounter = 1000000000;
+
+// Function to generate the next sequential account number
+function generateAccountNumber() {
+  const minAccountNumber = 1000000000;
+  const maxAccountNumber = 9999999999;
+  const randomAccountNumber = Math.floor(
+    Math.random() * (maxAccountNumber - minAccountNumber + 1) + minAccountNumber
+  );
+  return randomAccountNumber.toString();
+}
+
 // Registration route
 router.post("/v1/auth/signup", async (req, res) => {
   try {
     const { userName, firstName, lastName, pin, email, password } = req.body;
 
     // Generate a random 6-digit verification code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
 
     // Set verification code expiration time to 2 minutes
     const expirationTime = Date.now() + 2 * 60 * 1000; // Current time + 2 minutes
@@ -65,7 +81,9 @@ router.post("/v1/auth/signup", async (req, res) => {
     }
 
     if (Number(userName) || Number(userName) === 0) {
-      return res.status(400).send({ error: "Username cannot contain only numbers" });
+      return res
+        .status(400)
+        .send({ error: "Username cannot contain only numbers" });
     }
 
     const validUsername = userName.match(usernameRegex);
@@ -97,7 +115,18 @@ router.post("/v1/auth/signup", async (req, res) => {
     });
 
     // Save the user to the database
-    await newUser.save();
+    const savedUser = await newUser.save();
+
+    // Generate a unique account number for the user's wallet
+    const accountNumber = generateAccountNumber();
+
+    // Create a wallet for the user
+    const newWallet = new UserWallet({
+      userId: savedUser._id,
+      accountNumber,
+      balance: 5000, // Initial balance
+    });
+    await newWallet.save();
 
     // Store the verification code and its expiration time
     verificationCodes.set(verificationCode, expirationTime);
@@ -105,7 +134,11 @@ router.post("/v1/auth/signup", async (req, res) => {
     // Send the verification code to the user's email address
     sendVerificationEmail(email, userName, verificationCode);
 
-    res.status(200).send({ message: "User registered successfully" });
+    res.status(200).send({
+      message: "User registered successfully",
+      accountNumber: newWallet.accountNumber,
+      balance: newWallet.balance,
+    });
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).send({ error: "Internal server error" });
@@ -125,7 +158,9 @@ router.post("/v1/auth/verify-email", async (req, res) => {
     // Check if the verification code exists and is not expired
     const expirationTime = verificationCodes.get(verificationCode);
     if (!expirationTime || Date.now() > expirationTime) {
-      return res.status(400).send({ error: "Invalid or expired verification code" });
+      return res
+        .status(400)
+        .send({ error: "Invalid or expired verification code" });
     }
 
     // Find the user by verification status and verification code
@@ -187,7 +222,9 @@ router.post("/v1/auth/resend-verification-code", async (req, res) => {
     }
 
     // Generate a new verification code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
 
     // Set verification code expiration time to 2 minutes
     const expirationTime = Date.now() + 2 * 60 * 1000; // Current time + 2 minutes
@@ -248,7 +285,9 @@ router.post("/v1/auth/login", async (req, res) => {
 
     // Check if the username and password are provided
     if (!userName || !password) {
-      return res.status(400).send({ error: "Please provide username and password" });
+      return res
+        .status(400)
+        .send({ error: "Please provide username and password" });
     }
 
     // Find the user by the provided username
@@ -258,6 +297,9 @@ router.post("/v1/auth/login", async (req, res) => {
     if (!user) {
       return res.status(401).send({ error: "Invalid username or password" });
     }
+
+    // Fetch the user's wallet data
+    const wallet = await UserWallet.findOne({ userId: user._id });
 
     // Compare the provided password with the stored password
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -269,7 +311,9 @@ router.post("/v1/auth/login", async (req, res) => {
 
     // Check if the user is verified
     if (!user.isVerified) {
-      return res.status(401).send({ error: "Please verify your email address" });
+      return res
+        .status(401)
+        .send({ error: "Please verify your email address" });
     }
 
     // Create and sign a JSON Web Token (JWT)
@@ -277,13 +321,21 @@ router.post("/v1/auth/login", async (req, res) => {
       expiresIn: "1h", // Token expiration time
     });
 
-    res.status(200).send({ token });
+    res.status(200).send({
+      token,
+      userName: user.userName,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      isVerified: user.isVerified,
+      accountNumber: wallet.accountNumber,
+      balance: wallet.balance,
+    });
   } catch (error) {
     console.error("Error logging in:", error);
     res.status(500).send({ error: "Internal server error" });
   }
 });
-
 
 // Map to store reset password tokens and their expiration times
 const resetPasswordTokens = new Map();
@@ -374,9 +426,7 @@ router.post("/v1/auth/reset-password", async (req, res) => {
 
     // Check if the token and new password are provided
     if (!token || !password) {
-      return res
-        .status(400)
-        .send({ error: "Token and password are required" });
+      return res.status(400).send({ error: "Token and password are required" });
     }
 
     // Check if the token is valid and not expired
@@ -438,7 +488,6 @@ async function fetchUserDataFromDatabase(userId) {
     throw error;
   }
 }
-
 
 // Dashboard route to fetch user data
 router.get("/v1/auth/user", async (req, res) => {
