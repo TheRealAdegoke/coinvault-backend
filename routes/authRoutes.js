@@ -482,7 +482,7 @@ async function fetchUserDataFromDatabase(userId) {
       throw new Error("User not found");
     }
 
-    return { firstName: user.firstName, lastName: user.lastName };
+    return { firstName: user.firstName, lastName: user.lastName, email: user.email, userName: user.userName };
   } catch (error) {
     console.error("Error fetching user data from the database:", error);
     throw error;
