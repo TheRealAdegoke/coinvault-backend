@@ -6,7 +6,8 @@ const UserWallet = require("../model/walletModel");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { v4: uuidv4 } = require("uuid")
+const multer = require("multer");
+const path = require("path");
 
 // Generate a secure JWT secret
 const generateJWTSecret = () => {
@@ -508,34 +509,48 @@ router.get("/v1/auth/user", async (req, res) => {
   }
 });
 
-// Add a new API endpoint for profile picture upload
-router.post("/v1/auth/upload-profile-picture", async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const file = req.file;
+// Set up the storage for uploaded images
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Destination folder for image uploads
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const fileExtension = path.extname(file.originalname);
+    const filename = uniqueSuffix + fileExtension;
+    cb(null, filename); // Use a unique filename for each uploaded image
+  },
+});
 
-    // Check if the file exists and its size is within the limit (5MB)
-    if (!file || file.size > 5 * 1024 * 1024) {
-      return res.status(400).send({ error: "Images should not exceed 5MB" });
+// Create a multer middleware with the defined storage
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Limit image size to 5MB
+  },
+});
+
+// Add the image upload route
+router.post("/v1/auth/upload-profile-image", upload.single("profileImage"), async (req, res) => {
+  try {
+    // Check if a file was uploaded
+    if (!req.file) {
+      return res.status(400).send({ error: "No file uploaded" });
     }
 
-    // Generate a unique filename for the image using uuid
-    const uniqueFilename = uuidv4() + getFileExtension(file.originalname);
+    // Get the user ID from the JWT token
+    const token = req.header("Authorization").replace("Bearer ", "");
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const userId = decodedToken.userId;
 
-    // Update the user's profile with the image filename
-    await User.findByIdAndUpdate(userId, { profilePicture: uniqueFilename });
+    // Update the user's profileImage field with the uploaded image filename
+    await User.findByIdAndUpdate(userId, { profileImage: req.file.filename });
 
-    res.status(200).send({ message: "Profile picture uploaded successfully" });
+    res.status(200).send({ message: "Profile image uploaded successfully" });
   } catch (error) {
-    console.error("Error uploading profile picture:", error);
+    console.error("Error uploading profile image:", error);
     res.status(500).send({ error: "Internal server error" });
   }
 });
-
-// Function to extract the file extension from the original filename
-function getFileExtension(filename) {
-  return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2);
-}
-
 
 module.exports = router;
