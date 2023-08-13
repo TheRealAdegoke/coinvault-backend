@@ -34,6 +34,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  profilePicture: {
+    type: String,
+  },
   dateJoined: {
     type: Date,
     default: Date.now,

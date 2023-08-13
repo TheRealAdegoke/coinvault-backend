@@ -507,4 +507,31 @@ router.get("/v1/auth/user", async (req, res) => {
   }
 });
 
+// Add a new API endpoint for profile picture upload
+router.post("/v1/auth/upload-profile-picture", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const file = req.file;
+
+    // Check if the file exists and its size is within the limit (5MB)
+    if (!file || file.size > 5 * 1024 * 1024) {
+      return res.status(400).send({ error: "Images should not exceed 5MB" });
+    }
+
+    // Generate a unique filename for the image (you can use a library like uuid)
+    const uniqueFilename = generateUniqueFilename(file.originalname);
+
+    // Upload the image to the server or a cloud storage service (e.g., AWS S3)
+
+    // Update the user's profile with the image URL or filename
+    await User.findByIdAndUpdate(userId, { profilePicture: uniqueFilename });
+
+    res.status(200).send({ message: "Profile picture uploaded successfully" });
+  } catch (error) {
+    console.error("Error uploading profile picture:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+
 module.exports = router;
