@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  profilePicture: {
+  profileImage: {
     type: String,
   },
   dateJoined: {
