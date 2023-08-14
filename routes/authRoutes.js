@@ -509,47 +509,51 @@ router.get("/v1/auth/user", async (req, res) => {
   }
 });
 
-// Set up the storage for uploaded images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Destination folder for image uploads
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const fileExtension = path.extname(file.originalname);
-    const filename = uniqueSuffix + fileExtension;
-    cb(null, filename); // Use a unique filename for each uploaded image
-  },
-});
-
-// Create a multer middleware with the defined storage
+// Configure multer for handling file uploads
 const upload = multer({
-  storage: storage,
+  dest: "uploads/",
   limits: {
-    fileSize: 5 * 1024 * 1024, // Limit image size to 5MB
+    fileSize: 3 * 1024 * 1024, // 3 MB limit
+  },
+  fileFilter: (req, file, callback) => {
+    // Check if the uploaded file is an image
+    const allowedExtensions = [".png", ".jpg", ".jpeg"];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    if (allowedExtensions.includes(fileExtension)) {
+      callback(null, true);
+    } else {
+      callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", "Invalid file type"), false);
+    }
   },
 });
 
-// Add the image upload route
-router.post("/v1/auth/upload-profile-image", upload.single("profileImage"), async (req, res) => {
+// Route for uploading profile image
+router.post("/:userId/upload-profile-image", upload.single("profileImage"), async (req, res) => {
   try {
-    // Check if a file was uploaded
-    if (!req.file) {
-      return res.status(400).send({ error: "No file uploaded" });
+    const userId = req.params.userId;
+    const profileImage = req.file;
+
+    // Check if an image was uploaded
+    if (!profileImage) {
+      return res.status(400).json({ error: "No image uploaded." });
     }
 
-    // Get the user ID from the JWT token
-    const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, JWT_SECRET);
-    const userId = decodedToken.userId;
+    // Update the user's profile image in the database with the original filename
+    await User.findByIdAndUpdate(userId, { profileImage: profileImage.originalname });
 
-    // Update the user's profileImage field with the uploaded image filename
-    await User.findByIdAndUpdate(userId, { profileImage: req.file.filename });
-
-    res.status(200).send({ message: "Profile image uploaded successfully" });
+    res.status(200).json({ message: "Profile image uploaded successfully." });
   } catch (error) {
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        // Handle file size limit exceeded error
+        return res.status(400).json({ error: "Image size should not exceed 3MB." });
+      } else if (error.code === "LIMIT_UNEXPECTED_FILE") {
+        // Handle invalid file type error
+        return res.status(400).json({ error: "Invalid file type. Allowed file types: png, jpg, jpeg." });
+      }
+    }
     console.error("Error uploading profile image:", error);
-    res.status(500).send({ error: "Internal server error" });
+    res.status(500).json({ error: "An error occurred while uploading the profile image." });
   }
 });
 
