@@ -528,7 +528,7 @@ const upload = multer({
 });
 
 // Route for uploading profile image
-router.post("/:userId/upload-profile-image", upload.single("profileImage"), async (req, res) => {
+router.post("/v1/auth/:userId/upload-profile-image", upload.single("profileImage"), async (req, res) => {
   try {
     const userId = req.params.userId;
     const profileImage = req.file;
