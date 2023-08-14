@@ -34,8 +34,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  profileImage: {
-    type: String,
+   profileImage: {
+    type: String, // Store the image URL as a string
+    default: null, // Default value is null
   },
   dateJoined: {
     type: Date,
