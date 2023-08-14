@@ -6,8 +6,7 @@ const UserWallet = require("../model/walletModel");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const multer = require("multer");
-const path = require("path");
+const upload = require("../upload/upload")
 
 // Generate a secure JWT secret
 const generateJWTSecret = () => {
@@ -405,7 +404,7 @@ async function sendResetPasswordEmail(email, userName, token) {
       },
     });
 
-    const resetPasswordLink = `https://coin-vault.vercel.app/resetpassword?token=${token}`;
+    const resetPasswordLink = `https://coinvault.onrender.com/resetpassword?token=${token}`;
 
     const mailOptions = {
       from: process.env.EMAIL_USERNAME,
@@ -484,7 +483,7 @@ async function fetchUserDataFromDatabase(userId) {
       throw new Error("User not found");
     }
 
-    return { firstName: user.firstName, lastName: user.lastName, email: user.email, userName: user.userName };
+    return { firstName: user.firstName, lastName: user.lastName, email: user.email, userName: user.userName, profileImage: user.profileImage };
   } catch (error) {
     console.error("Error fetching user data from the database:", error);
     throw error;
@@ -509,52 +508,51 @@ router.get("/v1/auth/user", async (req, res) => {
   }
 });
 
-// Configure multer for handling file uploads
-const upload = multer({
-  dest: "uploads/",
-  limits: {
-    fileSize: 3 * 1024 * 1024, // 3 MB limit
-  },
-  fileFilter: (req, file, callback) => {
-    // Check if the uploaded file is an image
-    const allowedExtensions = [".png", ".jpg", ".jpeg"];
-    const fileExtension = path.extname(file.originalname).toLowerCase();
-    if (allowedExtensions.includes(fileExtension)) {
-      callback(null, true);
-    } else {
-      callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", "Invalid file type"), false);
-    }
-  },
-});
-
-// Route for uploading profile image
-router.post("/v1/auth/:userId/upload-profile-image", upload.single("profileImage"), async (req, res) => {
+// Route to handle image upload
+router.post("/upload-profile-image", upload.single("profileImage"), async (req, res) => {
   try {
-    const userId = req.params.userId;
-    const profileImage = req.file;
+    const userId = req.body.userId; // Assuming you pass the user ID from the frontend
 
-    // Check if an image was uploaded
-    if (!profileImage) {
-      return res.status(400).json({ error: "No image uploaded." });
+    // Check if the uploaded file size is larger than 3MB
+    if (!req.file) {
+      return res.status(400).json({ message: "Please upload an image" });
+    }
+    if (req.file.size > 3 * 1024 * 1024) {
+      return res.status(400).json({ message: "Image file is larger than 3MB" });
     }
 
-    // Update the user's profile image in the database with the original filename
-    await User.findByIdAndUpdate(userId, { profileImage: profileImage.originalname });
+    // Update the user's profileImage field with the uploaded image URL
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    res.status(200).json({ message: "Profile image uploaded successfully." });
+    // Assuming the file path from Cloudinary is stored in req.file.path
+    user.profileImage = req.file.path;
+    await user.save();
+
+    res.json({ message: "Profile image uploaded successfully" });
   } catch (error) {
-    if (error instanceof multer.MulterError) {
-      if (error.code === "LIMIT_FILE_SIZE") {
-        // Handle file size limit exceeded error
-        return res.status(400).json({ error: "Image size should not exceed 3MB." });
-      } else if (error.code === "LIMIT_UNEXPECTED_FILE") {
-        // Handle invalid file type error
-        return res.status(400).json({ error: "Invalid file type. Allowed file types: png, jpg, jpeg." });
-      }
-    }
-    console.error("Error uploading profile image:", error);
-    res.status(500).json({ error: "An error occurred while uploading the profile image." });
+    console.error(error);
+    res.status(500).json({ message: "Failed to upload profile image" });
   }
 });
+
+// Route to serve profile images
+router.get("/profile-image/:userId", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user || !user.profileImage) {
+      return res.status(404).json({ message: "Profile image not found" });
+    }
+
+    // Serve the profile image
+    res.sendFile(user.profileImage);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to retrieve profile image" });
+  }
+});
+
 
 module.exports = router;
