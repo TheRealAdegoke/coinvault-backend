@@ -9,7 +9,7 @@ app.use(cookieParser())
 app.use(express.json());
 
 app.use(cors({
-     origin: ['https://coinvault.onrender.com', "https://coin-vault.vercel.app", 'https://www.google.com/',"http://localhost:5173"],
+     origin: ['https://coinvault.onrender.com', "https://coin-vault.vercel.app", 'https://www.google.com/',"http://localhost:5173", "http://localhost:8080"],
      methods: ['GET','POST','DELETE','UPDATE','PUT','PATCH']
 }));
 

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const express = require("express");
 const bcrypt = require("bcrypt");
 const router = express.Router();
@@ -7,6 +8,7 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const upload = require("../upload/upload")
+const path = require('path');
 
 // Generate a secure JWT secret
 const generateJWTSecret = () => {
@@ -541,13 +543,21 @@ router.post("/upload-profile-image", upload.single("profileImage"), async (req, 
 // Route to serve profile images
 router.get("/profile-image/:userId", async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId);
+    const userId = req.params.userId;
+
+    // Check if userId is a valid ObjectId
+    if (!mongoose.isValidObjectId(userId)) {
+      return res.status(400).json({ message: "Invalid userId format" });
+    }
+
+    const user = await User.findById(userId);
+
     if (!user || !user.profileImage) {
       return res.status(404).json({ message: "Profile image not found" });
     }
 
-    // Serve the profile image
-    res.sendFile(user.profileImage);
+    // Serve the profile image URL directly (assuming user.profileImage contains a URL)
+    res.json({ profileImage: user.profileImage });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to retrieve profile image" });
