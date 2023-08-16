@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const express = require("express");
 const bcrypt = require("bcrypt");
 const router = express.Router();
@@ -7,8 +6,6 @@ const UserWallet = require("../model/walletModel");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const upload = require("../upload/upload")
-const path = require('path');
 
 // Generate a secure JWT secret
 const generateJWTSecret = () => {
@@ -507,60 +504,6 @@ router.get("/v1/auth/user", async (req, res) => {
   } catch (error) {
     console.error("Error fetching user data:", error);
     res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Route to handle image upload
-router.post("/upload-profile-image", upload.single("profileImage"), async (req, res) => {
-  try {
-    const userId = req.body.userId; // Assuming you pass the user ID from the frontend
-
-    // Check if the uploaded file size is larger than 3MB
-    if (!req.file) {
-      return res.status(400).json({ message: "Please upload an image" });
-    }
-    if (req.file.size > 3 * 1024 * 1024) {
-      return res.status(400).json({ message: "Image file is larger than 3MB" });
-    }
-
-    // Update the user's profileImage field with the uploaded image URL
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Assuming the file path from Cloudinary is stored in req.file.path
-    user.profileImage = req.file.path;
-    await user.save();
-
-    res.json({ message: "Profile image uploaded successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to upload profile image" });
-  }
-});
-
-// Route to serve profile images
-router.get("/profile-image/:userId", async (req, res) => {
-  try {
-    const userId = req.params.userId;
-
-    // Check if userId is a valid ObjectId
-    if (!mongoose.isValidObjectId(userId)) {
-      return res.status(400).json({ message: "Invalid userId format" });
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user || !user.profileImage) {
-      return res.status(404).json({ message: "Profile image not found" });
-    }
-
-    // Serve the profile image URL directly (assuming user.profileImage contains a URL)
-    res.json({ profileImage: user.profileImage });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to retrieve profile image" });
   }
 });
 
