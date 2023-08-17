@@ -1,4 +1,5 @@
 const User = require("../model/userModel");
+const UserWallet = require("../model/walletModel");
 const upload = require("../upload/upload")
 const express = require("express");
 const router = express.Router();
@@ -60,5 +61,37 @@ router.delete("/delete-profile-image/:userId", async (req, res) => {
     res.status(500).json({ message: "Failed to delete profile image" });
   }
 });
+
+// Route to handle user deletion
+router.delete("/delete-account/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Delete user's profile image from Cloudinary
+    if (user.profileImage) {
+      const cloudinaryPublicId = user.profileImage.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(cloudinaryPublicId);
+    }
+
+    // Delete the userWallet associated with the user account
+    const userWallet = await UserWallet.findOne({ user: userId });
+    if (userWallet) {
+      await UserWallet.deleteOne({ user: userId });
+    }
+
+    // Delete the user account
+    await User.deleteOne({ _id: userId });
+
+    res.json({ message: "Account deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to delete account" });
+  }
+});
+
 
 module.exports = router;
