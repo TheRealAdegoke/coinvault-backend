@@ -5,7 +5,6 @@ const express = require("express");
 const router = express.Router();
 const cloudinary = require("cloudinary").v2
 
-
 // ! Route to handle image upload
 router.post("/upload-profile-image", upload.single("profileImage"), async (req, res) => {
   try {
