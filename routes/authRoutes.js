@@ -112,7 +112,6 @@ router.post("/v1/auth/signup", async (req, res) => {
       email,
       password: hashedPassword,
       verificationCode,
-      selectedCard
     });
 
     // ! Save the user to the database
