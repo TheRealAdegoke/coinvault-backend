@@ -40,8 +40,12 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
    profileImage: {
-    type: String, // Store the image URL as a string
-    default: null, // Default value is null
+    type: String,
+    default: null,
+  },
+  selectedCard: {
+    type: String,
+    default: null,
   },
   dateJoined: {
     type: Date,
