@@ -7,7 +7,6 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
-
 // ! Generate a secure JWT secret
 const generateJWTSecret = () => {
   const secret = crypto.randomBytes(64).toString("hex");
@@ -74,7 +73,7 @@ router.post("/v1/auth/signup", async (req, res) => {
       return res.status(400).send({ error: "Email already exists" });
     }
 
-// ! Check if the username is valid
+    // ! Check if the username is valid
     if (userName.length < 4 || userName.length > 20) {
       return res
         .status(400)
@@ -103,7 +102,6 @@ router.post("/v1/auth/signup", async (req, res) => {
 
     // ! Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const firstCard = "../CardDesign/CoinVault-card-1.png"
 
     // ! Create a new user instance
     const newUser = new User({
@@ -220,7 +218,7 @@ router.post("/v1/auth/resend-verification-code", async (req, res) => {
 
     // ! Check if the user is already verified
     if (user.isVerified) {
-      return res.status(400).send({ error: "Email is already verified Successfully" });
+      return res.status(400).send({ error: "Email is already verified" });
     }
 
     // ! Generate a new verification code
