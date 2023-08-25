@@ -150,7 +150,7 @@ router.get("/get-selected-card/:userId", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const selectedCard = user.selectedCard || firstCard; // Set the default card if none is selected
+    const selectedCard = user.selectedCard
 
     res.json({ selectedCard });
   } catch (error) {

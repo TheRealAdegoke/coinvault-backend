@@ -6,7 +6,6 @@ const UserWallet = require("../model/walletModel");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const defaultCardImage = "/src/DashBoard/Cards/CardImage/CoinVault-card-1.png"
 
 // ! Generate a secure JWT secret
 const generateJWTSecret = () => {
@@ -113,7 +112,6 @@ router.post("/v1/auth/signup", async (req, res) => {
       email,
       password: hashedPassword,
       verificationCode,
-      selectedCard: defaultCardImage
     });
 
     // ! Save the user to the database
