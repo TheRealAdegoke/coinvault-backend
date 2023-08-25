@@ -7,6 +7,7 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
+
 // ! Generate a secure JWT secret
 const generateJWTSecret = () => {
   const secret = crypto.randomBytes(64).toString("hex");
@@ -102,6 +103,7 @@ router.post("/v1/auth/signup", async (req, res) => {
 
     // ! Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
+    const firstCard = "../CardDesign/CoinVault-card-1.png"
 
     // ! Create a new user instance
     const newUser = new User({
@@ -112,6 +114,7 @@ router.post("/v1/auth/signup", async (req, res) => {
       email,
       password: hashedPassword,
       verificationCode,
+      selectedCard: firstCard 
     });
 
     // ! Save the user to the database
