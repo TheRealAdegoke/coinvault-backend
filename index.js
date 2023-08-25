@@ -20,7 +20,7 @@ const userRoute = require("./routes/userRoutes");
 
 // API endpoint
 app.get("/", (req, res) => {
-  res.send("<h1>We are live</h1>");
+  res.send("<h1>Giddy Up Soldier</h1>");
 });
 
 app.use("/", authRoute);
