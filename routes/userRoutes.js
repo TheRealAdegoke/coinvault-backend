@@ -6,12 +6,12 @@ const router = express.Router();
 const cloudinary = require("cloudinary").v2
 
 
-// Route to handle image upload
+// ! Route to handle image upload
 router.post("/upload-profile-image", upload.single("profileImage"), async (req, res) => {
   try {
-    const userId = req.body.userId; // Assuming you pass the user ID from the frontend
+    const userId = req.body.userId; // ! Assuming you pass the user ID from the frontend
 
-    // Check if the uploaded file size is larger than 3MB
+    // ! Check if the uploaded file size is larger than 3MB
     if (!req.file) {
       return res.status(400).json({ message: "Please upload an image" });
     }
@@ -19,13 +19,13 @@ router.post("/upload-profile-image", upload.single("profileImage"), async (req, 
       return res.status(400).json({ message: "Image file is larger than 3MB" });
     }
 
-    // Update the user's profileImage field with the uploaded image URL
+    // ! Update the user's profileImage field with the uploaded image URL
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Assuming the file path from Cloudinary is stored in req.file.path
+    // ! Assuming the file path from Cloudinary is stored in req.file.path
     user.profileImage = req.file.path;
     await user.save();
 
@@ -37,7 +37,7 @@ router.post("/upload-profile-image", upload.single("profileImage"), async (req, 
 });
 
 
-// Route to handle profile image deletion
+// ! Route to handle profile image deletion
 router.delete("/delete-profile-image/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -50,7 +50,7 @@ router.delete("/delete-profile-image/:userId", async (req, res) => {
       const cloudinaryPublicId = user.profileImage.split("/").pop().split(".")[0];
       await cloudinary.uploader.destroy(cloudinaryPublicId);
 
-      user.profileImage = null; // Clear the profileImage field in the user document
+      user.profileImage = null; // ! Clear the profileImage field in the user document
       await user.save();
       return res.json({ message: "Profile image deleted successfully" });
     } else {
@@ -62,7 +62,7 @@ router.delete("/delete-profile-image/:userId", async (req, res) => {
   }
 });
 
-// Route to handle user deletion
+// ! Route to handle user deletion
 router.delete("/delete-account/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -71,19 +71,19 @@ router.delete("/delete-account/:userId", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Delete user's profile image from Cloudinary
+    // ! Delete user's profile image from Cloudinary
     if (user.profileImage) {
       const cloudinaryPublicId = user.profileImage.split("/").pop().split(".")[0];
       await cloudinary.uploader.destroy(cloudinaryPublicId);
     }
 
-    // Delete the userWallet associated with the user account
+    // ! Delete the userWallet associated with the user account
     const userWallet = await UserWallet.findOne({ user: userId });
     if (userWallet) {
       await UserWallet.deleteOne({ user: userId });
     }
 
-    // Delete the user account
+    // ! Delete the user account
     await User.deleteOne({ _id: userId });
 
     res.json({ message: "Account deleted successfully" });
@@ -93,29 +93,69 @@ router.delete("/delete-account/:userId", async (req, res) => {
   }
 });
 
-// Update user's firstName and lastName
+// ! Update user's firstName and lastName
 router.put("/users/name-change/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
     const { firstName, lastName } = req.body;
 
-    // Find the user by ID
+    // ! Find the user by ID
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Update the user's firstName and lastName
+    // ! Update the user's firstName and lastName
     user.firstName = firstName;
     user.lastName = lastName;
 
-    // Save the changes
+    // ! Save the changes
     await user.save();
 
     return res.status(200).json({ message: "User updated successfully", user });
   } catch (error) {
     return res.status(500).json({ error: "An error occurred while updating user" });
+  }
+});
+
+// ! Update user's card design
+router.put("/update-selected-card/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { selectedCard } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.selectedCard = selectedCard;
+    await user.save();
+
+    res.json({ message: "Selected Card updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update selected card" });
+  }
+});
+
+// ! Get user's card design
+router.get("/get-selected-card/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const selectedCard = user.selectedCard || firstCard; // Set the default card if none is selected
+
+    res.json({ selectedCard });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to get selected card" });
   }
 });
 
