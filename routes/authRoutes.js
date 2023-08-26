@@ -507,7 +507,7 @@ router.post("/v1/auth/reset-password", async (req, res) => {
 });
 
 // ! Function to fetch user data from the database
-async function fetchUserDataFromDatabase(userId) {
+async function fetchUserDataFromDatabase(userId, accountNumber) {
   try {
     const user = await User.findById(userId);
 
@@ -524,7 +524,7 @@ async function fetchUserDataFromDatabase(userId) {
       userId: user._id,
       cvv: user.cvv,
       cardNumber: user.cardNumber,
-      accountNumber: accountNumber,
+      accountNumber: accountNumber, // Add the accountNumber to the returned object
     };
   } catch (error) {
     console.error("Error fetching user data from the database:", error);
@@ -532,20 +532,20 @@ async function fetchUserDataFromDatabase(userId) {
   }
 }
 
+
 // ! Dashboard route to fetch user data
 router.get("/v1/auth/user", async (req, res) => {
   try {
-    // ! Retrieve the userId from the authenticated user's JWT token
+    // Retrieve the userId and account number from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
     const decodedToken = jwt.verify(token, JWT_SECRET);
     const userId = decodedToken.userId;
 
-    // ! Fetch the account number from the user's wallet
+    // Fetch the account number from the user's wallet or from wherever it's stored
     const wallet = await UserWallet.findOne({ userId });
     const accountNumber = wallet.accountNumber;
 
-
-    // ! Fetch the user data from the database
+    // Fetch the user data from the database and pass the account number
     const userData = await fetchUserDataFromDatabase(userId, accountNumber);
 
     res.json(userData);
