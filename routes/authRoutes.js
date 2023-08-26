@@ -25,9 +25,6 @@ const usernameRegex = /^[a-z0-9]+$/i;
 // ! Map to store verification codes and their expiration times
 const verificationCodes = new Map();
 
-// ! Initialize the account number sequence (starts from a defined value)
-let accountNumberCounter = 1000000000;
-
 // ! Function to generate the next sequential account number
 function generateAccountNumber() {
   const minAccountNumber = 1000000000;
@@ -37,6 +34,34 @@ function generateAccountNumber() {
   );
   return randomAccountNumber.toString();
 }
+
+// Function to generate unique 16-digit card number
+async function generateUniqueCardNumber() {
+  const minCardNumber = 1000000000000000;
+  const maxCardNumber = 9999999999999999;
+  let randomCardNumber;
+  do {
+    randomCardNumber = Math.floor(
+      Math.random() * (maxCardNumber - minCardNumber + 1) + minCardNumber
+    ).toString();
+  } while (await checkCardNumberExists(randomCardNumber)); // Check if card number already exists
+  return randomCardNumber;
+}
+
+// Function to check if the generated card number exists
+async function checkCardNumberExists(cardNumber) {
+  const user = await User.findOne({ cardNumber });
+  return !!user; // Return true if user exists, false if not
+}
+
+
+// Function to generate random 3-digit CVV code
+function generateCVV() {
+  const minCVV = 100;
+  const maxCVV = 999;
+  return Math.floor(Math.random() * (maxCVV - minCVV + 1) + minCVV).toString();
+}
+
 
 // ! Registration route
 router.post("/v1/auth/signup", async (req, res) => {
@@ -103,6 +128,12 @@ router.post("/v1/auth/signup", async (req, res) => {
     // ! Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate a unique 16-digit card number
+    const cardNumber = await generateUniqueCardNumber();
+
+    // Generate a random 3-digit CVV code
+    const cvv = generateCVV();
+
     // ! Create a new user instance
     const newUser = new User({
       userName,
@@ -112,6 +143,8 @@ router.post("/v1/auth/signup", async (req, res) => {
       email,
       password: hashedPassword,
       verificationCode,
+      cardNumber,
+      cvv,   
     });
 
     // ! Save the user to the database
@@ -138,6 +171,8 @@ router.post("/v1/auth/signup", async (req, res) => {
       message: "User registered successfully",
       accountNumber: newWallet.accountNumber,
       balance: newWallet.balance,
+      cardNumber: newUser.cardNumber,
+      cvv: newUser.cvv,
     });
   } catch (error) {
     console.error("Error registering user:", error);
@@ -482,7 +517,7 @@ async function fetchUserDataFromDatabase(userId) {
       throw new Error("User not found");
     }
 
-    return { firstName: user.firstName, lastName: user.lastName, email: user.email, userName: user.userName, profileImage: user.profileImage, userId: user._id, };
+    return { firstName: user.firstName, lastName: user.lastName, email: user.email, userName: user.userName, profileImage: user.profileImage, userId: user._id, cvv: user.cvv, cardNumber: user.cardNumber };
   } catch (error) {
     console.error("Error fetching user data from the database:", error);
     throw error;
