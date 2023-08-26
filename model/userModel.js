@@ -47,6 +47,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  cardNumber: {
+    type: String,
+    unique: true,
+  },
+  cvv: {
+    type: String,
+    unique: true,
+  },
   dateJoined: {
     type: Date,
     default: Date.now,
