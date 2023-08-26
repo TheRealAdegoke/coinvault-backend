@@ -54,14 +54,12 @@ async function checkCardNumberExists(cardNumber) {
   return !!user; // Return true if user exists, false if not
 }
 
-
 // Function to generate random 3-digit CVV code
 function generateCVV() {
   const minCVV = 100;
   const maxCVV = 999;
   return Math.floor(Math.random() * (maxCVV - minCVV + 1) + minCVV).toString();
 }
-
 
 // ! Registration route
 router.post("/v1/auth/signup", async (req, res) => {
@@ -144,7 +142,7 @@ router.post("/v1/auth/signup", async (req, res) => {
       password: hashedPassword,
       verificationCode,
       cardNumber,
-      cvv,   
+      cvv,
     });
 
     // ! Save the user to the database
@@ -517,7 +515,17 @@ async function fetchUserDataFromDatabase(userId) {
       throw new Error("User not found");
     }
 
-    return { firstName: user.firstName, lastName: user.lastName, email: user.email, userName: user.userName, profileImage: user.profileImage, userId: user._id, cvv: user.cvv, cardNumber: user.cardNumber };
+    return {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      userName: user.userName,
+      profileImage: user.profileImage,
+      userId: user._id,
+      cvv: user.cvv,
+      cardNumber: user.cardNumber,
+      accountNumber: accountNumber,
+    };
   } catch (error) {
     console.error("Error fetching user data from the database:", error);
     throw error;
@@ -532,8 +540,13 @@ router.get("/v1/auth/user", async (req, res) => {
     const decodedToken = jwt.verify(token, JWT_SECRET);
     const userId = decodedToken.userId;
 
+    // ! Fetch the account number from the user's wallet
+    const wallet = await UserWallet.findOne({ userId });
+    const accountNumber = wallet.accountNumber;
+
+
     // ! Fetch the user data from the database
-    const userData = await fetchUserDataFromDatabase(userId);
+    const userData = await fetchUserDataFromDatabase(userId, accountNumber);
 
     res.json(userData);
   } catch (error) {
@@ -541,6 +554,5 @@ router.get("/v1/auth/user", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 module.exports = router;
