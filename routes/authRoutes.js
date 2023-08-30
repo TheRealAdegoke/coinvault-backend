@@ -126,6 +126,8 @@ router.post("/v1/auth/signup", async (req, res) => {
     // ! Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const hashedPin = await bcrypt.hash(pin, 10);
+
     // Generate a unique 16-digit card number
     const cardNumber = await generateUniqueCardNumber();
 
@@ -137,7 +139,7 @@ router.post("/v1/auth/signup", async (req, res) => {
       userName,
       firstName,
       lastName,
-      pin: hashedPassword,
+      pin: hashedPin,
       email,
       password: hashedPassword,
       verificationCode,
@@ -554,5 +556,62 @@ router.get("/v1/auth/user", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
+// ! Transfer routes
+router.post("/transfer-funds", async (req, res) => {
+  try {
+    const { receiverAccountNumber, amount, pin } = req.body;
+
+    // Check if the amount is less than the minimum transfer amount
+    if (amount < 50) {
+      return res.status(400).send({ error: "Minimum transfer amount is 50 USD" });
+    }
+
+    // Retrieve the userId from the authenticated user's JWT token
+    const token = req.header("Authorization").replace("Bearer ", "");
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const senderUserId = decodedToken.userId;
+
+    // Fetch sender's wallet and user information
+    const senderWallet = await UserWallet.findOne({ userId: senderUserId });
+    const senderUser = await User.findById(senderUserId);
+
+    // Check if the sender has enough balance
+    if (senderWallet.balance < amount) {
+      return res.status(400).send({ error: "Insufficient balance" });
+    }
+
+    // Verify the PIN provided by the sender
+    const isPinValid = await bcrypt.compare(pin, senderUser.pin);
+    if (!isPinValid) {
+      return res.status(400).send({ error: "Invalid PIN" });
+    }
+
+    // Fetch receiver's wallet
+    const receiverWallet = await UserWallet.findOne({
+      accountNumber: receiverAccountNumber,
+    });
+
+    if (!receiverWallet) {
+      return res.status(400).send({ error: "Receiver account not found" });
+    }
+
+    // Update sender's balance
+    senderWallet.balance -= amount;
+    await senderWallet.save();
+
+    // Update receiver's balance
+    receiverWallet.balance += amount;
+    await receiverWallet.save();
+
+    res.status(200).send({ message: "Funds transferred successfully" });
+  } catch (error) {
+    console.error("Error transferring funds:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+
 
 module.exports = router;
