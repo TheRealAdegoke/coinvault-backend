@@ -519,7 +519,7 @@ async function fetchUserDataFromDatabase(userId, accountNumber) {
     }
 
     if (!wallet) {
-      throw new Error("User not found");
+      throw new Error("Wallet not found");
     }
 
     return {
