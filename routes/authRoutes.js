@@ -512,8 +512,13 @@ router.post("/v1/auth/reset-password", async (req, res) => {
 async function fetchUserDataFromDatabase(userId, accountNumber) {
   try {
     const user = await User.findById(userId);
+    const wallet = await UserWallet.findOne({ userId });
 
     if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (!wallet) {
       throw new Error("User not found");
     }
 
@@ -526,7 +531,8 @@ async function fetchUserDataFromDatabase(userId, accountNumber) {
       userId: user._id,
       cvv: user.cvv,
       cardNumber: user.cardNumber,
-      accountNumber: accountNumber, // Add the accountNumber to the returned object
+      accountNumber: accountNumber,
+      balance: wallet.balance,
     };
   } catch (error) {
     console.error("Error fetching user data from the database:", error);
