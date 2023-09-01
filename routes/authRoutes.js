@@ -591,7 +591,7 @@ router.post("/transfer-funds", async (req, res) => {
     // Verify the PIN provided by the sender
     const isPinValid = await bcrypt.compare(pin, senderUser.pin);
     if (!isPinValid) {
-      return res.status(400).send({ error: "Invalid PIN" });
+      return res.status(400).send({ error: "Invalid Transaction PIN" });
     }
 
     // Fetch receiver's wallet
