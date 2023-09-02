@@ -563,7 +563,6 @@ router.get("/v1/auth/user", async (req, res) => {
   }
 });
 
-
 // ! Transfer routes
 router.post("/transfer-funds", async (req, res) => {
   try {
@@ -601,6 +600,11 @@ router.post("/transfer-funds", async (req, res) => {
 
     if (!receiverWallet) {
       return res.status(400).send({ error: "Receiver account not found" });
+    }
+
+    // ! Check if the sender's account number is the same as the receiver's account number
+    if (senderWallet.accountNumber === receiverAccountNumber) {
+      return res.status(400).send({ error: "Cannot send funds to your own account" });
     }
 
     // Update sender's balance
