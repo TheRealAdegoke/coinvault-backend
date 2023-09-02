@@ -573,7 +573,7 @@ router.post("/transfer-funds", async (req, res) => {
       return res.status(400).send({ error: "Minimum transfer amount is 50 USD" });
     }
 
-    // Retrieve the userId from the authenticated user's JWT token
+    // Retrieve the userId and account number from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
     const decodedToken = jwt.verify(token, JWT_SECRET);
     const senderUserId = decodedToken.userId;
@@ -602,7 +602,7 @@ router.post("/transfer-funds", async (req, res) => {
       return res.status(400).send({ error: "Receiver account not found" });
     }
 
-    // ! Check if the sender's account number is the same as the receiver's account number
+    // Check if the sender's account number is the same as the receiver's account number
     if (senderWallet.accountNumber === receiverAccountNumber) {
       return res.status(400).send({ error: "Cannot send funds to your own account" });
     }
