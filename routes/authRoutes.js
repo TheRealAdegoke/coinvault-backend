@@ -5,16 +5,7 @@ const User = require("../model/userModel");
 const UserWallet = require("../model/walletModel");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
-
-// ! Generate a secure JWT secret
-const generateJWTSecret = () => {
-  const secret = crypto.randomBytes(64).toString("hex");
-  return secret;
-};
-
-// ! Set the JWT secret
-const JWT_SECRET = generateJWTSecret();
+const JWT_SECRET = require("../Middleware/middleware")
 
 // ! Email validation regex pattern
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -562,66 +553,6 @@ router.get("/v1/auth/user", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-// ! Transfer routes
-router.post("/transfer-funds", async (req, res) => {
-  try {
-    const { receiverAccountNumber, amount, pin } = req.body;
-
-    // Check if the amount is less than the minimum transfer amount
-    if (amount < 50) {
-      return res.status(400).send({ error: "Minimum transfer amount is 50 USD" });
-    }
-
-    // Retrieve the userId and account number from the authenticated user's JWT token
-    const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, JWT_SECRET);
-    const senderUserId = decodedToken.userId;
-
-    // Fetch sender's wallet and user information
-    const senderWallet = await UserWallet.findOne({ userId: senderUserId });
-    const senderUser = await User.findById(senderUserId);
-
-    // Check if the sender has enough balance
-    if (senderWallet.balance < amount) {
-      return res.status(400).send({ error: "Insufficient balance" });
-    }
-
-    // Verify the PIN provided by the sender
-    const isPinValid = await bcrypt.compare(pin, senderUser.pin);
-    if (!isPinValid) {
-      return res.status(400).send({ error: "Invalid Transaction PIN" });
-    }
-
-    // Fetch receiver's wallet
-    const receiverWallet = await UserWallet.findOne({
-      accountNumber: receiverAccountNumber,
-    });
-
-    if (!receiverWallet) {
-      return res.status(400).send({ error: "Receiver account not found" });
-    }
-
-    // Check if the sender's account number is the same as the receiver's account number
-    if (senderWallet.accountNumber === receiverAccountNumber) {
-      return res.status(400).send({ error: "Cannot send funds to your own account" });
-    }
-
-    // Update sender's balance
-    senderWallet.balance -= amount;
-    await senderWallet.save();
-
-    // Update receiver's balance
-    receiverWallet.balance += amount;
-    await receiverWallet.save();
-
-    res.status(200).send({ message: "Funds transferred successfully" });
-  } catch (error) {
-    console.error("Error transferring funds:", error);
-    res.status(500).send({ error: "Internal server error" });
-  }
-});
-
 
 
 module.exports = router;
