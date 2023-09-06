@@ -16,6 +16,7 @@ app.use(cors({
 
 const authRoute = require("./routes/authRoutes");
 const userRoute = require("./routes/userRoutes");
+const coinRoute = require("./routes/coinRoutes")
 
 
 // API endpoint
@@ -25,6 +26,7 @@ app.get("/", (req, res) => {
 
 app.use("/", authRoute);
 app.use("/", userRoute);
+app.use("/", coinRoute)
 
 const port = process.env.PORT || 8080;
 
