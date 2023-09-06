@@ -5,7 +5,9 @@ const User = require("../model/userModel");
 const UserWallet = require("../model/walletModel");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = require("../Middleware/middleware")
+const JWT_SECRET = require("../Middleware/jwt")
+const { generateRandomAddress } = require("../Middleware/generateRandomAddress")
+const supportedCoins = require("../Utils/supportedCoins")
 
 // ! Email validation regex pattern
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -150,6 +152,15 @@ router.post("/v1/auth/signup", async (req, res) => {
       accountNumber,
       balance: 5000, // ! Initial balance
     });
+
+    // Generate unique crypto addresses for each supported coin
+    const cryptoAddresses = {};
+    supportedCoins.forEach((coin) => {
+      cryptoAddresses[coin] = generateRandomAddress(25);
+    });
+
+    newWallet.cryptoAddresses = cryptoAddresses;
+
     await newWallet.save();
 
     // ! Store the verification code and its expiration time
@@ -164,6 +175,7 @@ router.post("/v1/auth/signup", async (req, res) => {
       balance: newWallet.balance,
       cardNumber: newUser.cardNumber,
       cvv: newUser.cvv,
+      cryptoAddresses,
     });
   } catch (error) {
     console.error("Error registering user:", error);

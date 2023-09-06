@@ -18,6 +18,16 @@ const userWalletSchema = new mongoose.Schema({
     required: true,
     default: 5000,
   },
+  cryptoHoldings: [
+    {
+      coinSymbol: String,
+      amount: Number,
+    },
+  ],
+  cryptoAddresses: {
+    type: Map,
+    of: String, // Map of coinSymbol to address (e.g., { "bitcoin": "address1", "ethereum": "address2" })
+  },
 });
 
 // Create a UserWallet model
