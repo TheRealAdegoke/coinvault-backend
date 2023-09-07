@@ -335,15 +335,15 @@ router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
     // Create an array to store the user's crypto data
     const userCryptoData = [];
 
-    // Fetch the current price of cryptocurrencies
+    // Fetch the current price and additional data of cryptocurrencies from CoinGecko
     const coinSymbols = supportedCoins.join(',');
-    const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coinSymbols}&vs_currencies=usd`);
+    const coinInfoResponse = await axios.get(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinSymbols}`);
 
-    if (response.status !== 200) {
-      return res.status(400).json({ error: "Failed to fetch cryptocurrency prices" });
+    if (coinInfoResponse.status !== 200) {
+      return res.status(400).json({ error: "Failed to fetch cryptocurrency information" });
     }
 
-    const cryptoPrices = response.data;
+    const coinInfoData = coinInfoResponse.data;
 
     // Iterate through supported coins and add them to userCryptoData
     for (const coinSymbol of supportedCoins) {
@@ -356,7 +356,20 @@ router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
         amount = cryptoHolding.amount;
       }
 
-      // Get the address from cryptoAddresses map
+      // Find the coin information in the response data
+      const coinInfo = coinInfoData.find((info) => info.id === coinSymbol);
+
+      if (!coinInfo) {
+        return res.status(400).json({ error: `Coin information not found for ${coinSymbol}` });
+      }
+
+      // Get the coin image URL from CoinGecko API
+      const imageUrl = coinInfo.image;
+
+      // Get the 24h price change percentage from CoinGecko API
+      const price_change_percentage_24h = coinInfo.price_change_percentage_24h || 0;
+
+      // Define the address based on your application's logic
       const address = wallet.cryptoAddresses.get(coinSymbol.toLowerCase()) || '';
 
       // Create the user's crypto data object
@@ -367,8 +380,8 @@ router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
         name: coinSymbol.charAt(0).toUpperCase() + coinSymbol.slice(1), // You can fetch the name from CoinGecko API if needed
         address,
         amount,
-        image: `https://assets.coingecko.com/coins/images/1/large/${coinSymbol}.png`, // Replace with actual image URL
-        price_change_percentage_24h: cryptoPrices[coinSymbol].usd || 0,
+        image: imageUrl, // Use the fetched image URL
+        price_change_percentage_24h,
       };
 
       userCryptoData.push(cryptoData);
