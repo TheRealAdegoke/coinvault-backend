@@ -320,4 +320,67 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
 });
 
 
+// Route to fetch user's coin data
+router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Fetch user's wallet
+    const wallet = await UserWallet.findOne({ userId });
+
+    if (!wallet) {
+      return res.status(400).json({ error: "User wallet not found" });
+    }
+
+    // Create an array to store the user's crypto data
+    const userCryptoData = [];
+
+    // Fetch the current price of cryptocurrencies
+    const coinSymbols = supportedCoins.join(',');
+    const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coinSymbols}&vs_currencies=usd`);
+
+    if (response.status !== 200) {
+      return res.status(400).json({ error: "Failed to fetch cryptocurrency prices" });
+    }
+
+    const cryptoPrices = response.data;
+
+    // Iterate through supported coins and add them to userCryptoData
+    for (const coinSymbol of supportedCoins) {
+      const cryptoHolding = wallet.cryptoHoldings.find((holding) => holding.coinSymbol === coinSymbol);
+
+      // Calculate the equivalent amount
+      let amount = 0;
+
+      if (cryptoHolding) {
+        amount = cryptoHolding.amount;
+      }
+
+      // Get the address from cryptoAddresses map
+      const address = wallet.cryptoAddresses.get(coinSymbol.toLowerCase()) || '';
+
+      // Create the user's crypto data object
+      const cryptoData = {
+        userId,
+        id: coinSymbol,
+        symbol: coinSymbol,
+        name: coinSymbol.charAt(0).toUpperCase() + coinSymbol.slice(1), // You can fetch the name from CoinGecko API if needed
+        address,
+        amount,
+        image: `https://assets.coingecko.com/coins/images/1/large/${coinSymbol}.png`, // Replace with actual image URL
+        price_change_percentage_24h: cryptoPrices[coinSymbol].usd || 0,
+      };
+
+      userCryptoData.push(cryptoData);
+    }
+
+    res.status(200).json(userCryptoData);
+  } catch (error) {
+    console.error("Error fetching user crypto holdings:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
 module.exports = router;
