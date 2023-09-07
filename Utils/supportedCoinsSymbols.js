@@ -1,7 +1,7 @@
 // supportedCoins
 const supportedCoinsSymbols = [
   'BTC',
-  'eth',
+  'ETH',
   'usdt',
   'bnb',
   'xrp',

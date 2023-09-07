@@ -170,6 +170,83 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
   }
 });
 
+// Route to swap cryptocurrency from one supported coin to another supported coin
+router.post("/v1/auth/swap-crypto", async (req, res) => {
+  try {
+    const { fromCoinSymbol, toCoinSymbol, amountToSwap } = req.body;
+
+    // Ensure the amount to swap is greater than 0
+    if (amountToSwap <= 0) {
+      return res.status(400).send({ error: "Invalid amount" });
+    }
+
+    // Check if both the fromCoin and toCoin are supported
+    if (!supportedCoins.includes(fromCoinSymbol) || !supportedCoins.includes(toCoinSymbol)) {
+      return res.status(400).send({ error: "One or both coins are not available for swapping" });
+    }
+
+    // Retrieve the userId from the authenticated user's JWT token
+    const token = req.header("Authorization").replace("Bearer ", "");
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const userId = decodedToken.userId;
+
+    // Fetch user's wallet
+    const wallet = await UserWallet.findOne({ userId });
+
+    if (!wallet) {
+      return res.status(400).send({ error: "User wallet not found" });
+    }
+
+    // Check if the user has the specified cryptocurrency in their wallet
+    const fromCoinHolding = wallet.cryptoHoldings.find((holding) => holding.coinSymbol === fromCoinSymbol);
+
+    if (!fromCoinHolding || fromCoinHolding.amount < amountToSwap) {
+      return res.status(400).send({ error: "Insufficient balance or no holdings for swapping" });
+    }
+
+    // Fetch the current price of both the fromCoin and toCoin (1 unit in USD)
+    const fromCoinPrice = await getCryptoPrice(fromCoinSymbol);
+    const toCoinPrice = await getCryptoPrice(toCoinSymbol);
+
+    if (!fromCoinPrice || !toCoinPrice) {
+      return res.status(400).send({ error: "Failed to fetch cryptocurrency prices" });
+    }
+
+    // Calculate the equivalent amount in USD for the fromCoin and toCoin
+    const equivalentAmountInUSDFromCoin = amountToSwap * fromCoinPrice;
+    const equivalentAmountInUSDToCoin = equivalentAmountInUSDFromCoin / toCoinPrice;
+
+    // Deduct the fromCoin from the user's holdings
+    fromCoinHolding.amount -= amountToSwap;
+
+    // Check if the user already holds the toCoin
+    const toCoinHolding = wallet.cryptoHoldings.find((holding) => holding.coinSymbol === toCoinSymbol);
+
+    if (toCoinHolding) {
+      // If the user already holds the toCoin, update the amount
+      toCoinHolding.amount += equivalentAmountInUSDToCoin;
+    } else {
+      // If not, add the equivalent amount of the toCoin to the user's balance
+      wallet.cryptoHoldings.push({
+        coinSymbol: toCoinSymbol,
+        amount: equivalentAmountInUSDToCoin,
+      });
+    }
+
+    // Save the updated user document
+    await wallet.save();
+
+    res.status(200).send({
+      message: `Cryptocurrency swapped successfully from ${fromCoinSymbol} to ${toCoinSymbol}`,
+      walletBalance: wallet.balance,
+      cryptoHoldings: wallet.cryptoHoldings,
+    });
+  } catch (error) {
+    console.error("Error swapping cryptocurrency:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
 // Route to transfer cryptocurrency for various coins using only receiver's address
 router.post("/v1/auth/transfer-crypto", async (req, res) => {
   try {
@@ -241,7 +318,6 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     res.status(500).send({ error: "Internal server error" });
   }
 });
-
 
 
 module.exports = router;
