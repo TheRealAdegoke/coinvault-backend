@@ -365,12 +365,16 @@ router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
 
       // Get the coin image URL from CoinGecko API
       const imageUrl = coinInfo.image;
-      
+
       // Get the symbol from CoinGecko API
       const symbol = coinInfo.symbol || '';
 
       // Get the 24h price change percentage from CoinGecko API
       const price_change_percentage_24h = coinInfo.price_change_percentage_24h || 0;
+
+      // Calculate the fiat value (worth in USD)
+      const cryptoPriceInUSD = coinInfo.current_price; // The current price in USD from CoinGecko
+      const fiatValue = amount * cryptoPriceInUSD;
 
       // Define the address based on your application's logic
       const address = wallet.cryptoAddresses.get(coinSymbol.toLowerCase()) || '';
@@ -383,6 +387,7 @@ router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
         name: coinSymbol.charAt(0).toUpperCase() + coinSymbol.slice(1), // You can fetch the name from CoinGecko API if needed
         address,
         amount,
+        fiatValue, // Add the calculated fiat value
         image: imageUrl, // Use the fetched image URL
         price_change_percentage_24h,
       };
@@ -396,9 +401,6 @@ router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-module.exports = router;
-
 
 
 module.exports = router;
