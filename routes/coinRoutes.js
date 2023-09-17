@@ -36,6 +36,11 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
       return res.status(400).send({ error: "Invalid amount" });
     }
 
+    // Ensure the amount to buy is greater than or equal to 50
+    if (amountToBuy < 50) {
+      return res.status(400).send({ error: "Amount to buy must be at least 50 USD" });
+    }
+
     // Check if the requested coin is in the allowed list
     if (!supportedCoins.includes(coinSymbol)) {
       return res.status(400).send({ error: "Coin not available for purchase" });
