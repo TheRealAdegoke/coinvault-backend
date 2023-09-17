@@ -100,7 +100,6 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
   }
 });
 
-
 // Route to sell cryptocurrency
 router.post("/v1/auth/sell-crypto", async (req, res) => {
   try {
