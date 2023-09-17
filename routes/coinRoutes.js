@@ -72,6 +72,14 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
       (holding) => holding.coinSymbol === coinSymbol
     );
 
+    // Calculate the total cost of the purchase
+    const totalCost = amountToBuy;
+
+    // Check if the user has sufficient balance to make the purchase
+    if (totalCost > wallet.balance) {
+      return res.status(400).send({ error: "Insufficient balance to make the purchase" });
+    }
+
     if (existingHoldingIndex !== -1) {
       // If the user already holds this cryptocurrency, update the amount
       wallet.cryptoHoldings[existingHoldingIndex].amount += equivalentAmount;
@@ -84,7 +92,7 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
     }
 
     // Deduct the equivalent amount in USD from the user's wallet balance
-    wallet.balance -= amountToBuy;
+    wallet.balance -= totalCost;
 
     // Save the updated user document
     await wallet.save();
@@ -99,6 +107,7 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
     res.status(500).send({ error: "Internal server error" });
   }
 });
+
 
 // Route to sell cryptocurrency
 router.post("/v1/auth/sell-crypto", async (req, res) => {
