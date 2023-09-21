@@ -543,7 +543,6 @@ async function fetchUserDataFromDatabase(userId, accountNumber) {
   }
 }
 
-
 // ! Dashboard route to fetch user data
 router.get("/v1/auth/user", async (req, res) => {
   try {
