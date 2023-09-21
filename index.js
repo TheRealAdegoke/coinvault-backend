@@ -3,21 +3,28 @@ const cors = require("cors");
 const connectDB = require("./Database/connect");
 require("dotenv").config();
 const app = express();
-const cookieParser = require("cookie-parser")
+const cookieParser = require("cookie-parser");
 
-app.use(cookieParser())
+app.use(cookieParser());
 app.use(express.json());
 
-app.use(cors({
-     origin: ['https://coinvault.onrender.com', 'https://www.google.com/',"http://localhost:5173", "https://coin-vault.vercel.app/", "http://localhost:8080"],
-     methods: ['GET','POST','DELETE','UPDATE','PUT','PATCH']
-}));
-
+app.use(
+  cors({
+    origin: [
+      'https://coinvault.onrender.com',
+      'https://www.google.com',
+      'http://localhost:5173',
+      'https://coin-vault.vercel.app',
+      'http://localhost:8080',
+    ],
+    methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
+    credentials: true, // Enable credentials (cookies, authorization headers, etc.)
+  })
+);
 
 const authRoute = require("./routes/authRoutes");
 const userRoute = require("./routes/userRoutes");
-const coinRoute = require("./routes/coinRoutes")
-
+const coinRoute = require("./routes/coinRoutes");
 
 // API endpoint
 app.get("/", (req, res) => {
@@ -26,7 +33,7 @@ app.get("/", (req, res) => {
 
 app.use("/", authRoute);
 app.use("/", userRoute);
-app.use("/", coinRoute)
+app.use("/", coinRoute);
 
 const port = process.env.PORT || 8080;
 
