@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const UserWallet = require("../model/walletModel");
+const User = require("../model/userModel");
 const supportedCoins = require("../Utils/supportedCoins");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = require("../Middleware/jwt")
@@ -88,6 +89,8 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
 
     // Check if the user has sufficient balance to make the purchase
     if (totalCost > wallet.balance) {
+      // Log the failed transaction
+  await createTransactionHistory(userId, "failed", `Failed to purchase ${coinSymbol}`);
       return res.status(400).send({ error: "Insufficient balance to make the purchase" });
     }
 
@@ -153,6 +156,7 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
     const holding = wallet.cryptoHoldings.find((holding) => holding.coinSymbol === coinSymbol);
 
     if (!holding || holding.amount < amountToSell) {
+      await createTransactionHistory(userId, "failed", `Failed to sell ${coinSymbol}`);
       return res.status(400).send({ error: "Insufficient balance or no holdings for sale" });
     }
 
@@ -226,6 +230,7 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
     const fromCoinHolding = wallet.cryptoHoldings.find((holding) => holding.coinSymbol === fromCoinSymbol);
 
     if (!fromCoinHolding || fromCoinHolding.amount < amountToSwap) {
+      await createTransactionHistory(userId, "failed", `Failed to swap ${fromCoinSymbol}`);
       return res.status(400).send({ error: "Insufficient balance or no holdings for swapping" });
     }
 
@@ -286,6 +291,13 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     const senderUserId = decodedToken.userId;
     const userId = decodedToken.userId;
 
+    // Fetch sender's information
+    const sender = await User.findById(userId);
+
+    if (!sender) {
+      return res.status(400).send({ error: "Sender not found" });
+    }
+
     // Fetch sender's wallet
     const senderWallet = await UserWallet.findOne({ userId: senderUserId });
 
@@ -299,6 +311,7 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     );
 
     if (!senderCryptoHolding || senderCryptoHolding.amount < cryptoAmountToSend) {
+      await createTransactionHistory(senderUserId, "failed", `Failed to send ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
       return res.status(400).send({ error: "Insufficient balance" });
     }
 
@@ -337,8 +350,11 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     await senderWallet.save();
     await receiverWallet.save();
     
-    // Log the transfer transaction
-    await createTransactionHistory(userId, "successful", `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
+    // Log the transfer transaction for the sender
+    await createTransactionHistory(senderUserId, "successful", `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
+
+    // Log the transfer transaction for the receiver
+    await createTransactionHistory(receiverWallet.userId, "received", `You Received ${cryptoAmountToSend} ${CryptoToSend} from ${sender.firstName} ${sender.lastName}`);
 
     res.status(200).send({
       message: `Transferred ${cryptoAmountToSend} ${CryptoToSend} successfully`,
@@ -362,7 +378,6 @@ router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
     res.status(500).send({ error: "Internal server error" });
   }
 });
-
 
 
 // Route to fetch user's coin data

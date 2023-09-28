@@ -9,7 +9,7 @@ const transactionHistorySchema = new mongoose.Schema({
     {
       status: {
         type: String,
-        enum: ["successful", "failed"],
+        enum: ["successful", "failed", "received"],
         required: true,
       },
       message: {
@@ -23,6 +23,12 @@ const transactionHistorySchema = new mongoose.Schema({
     },
   ],
 });
+
+transactionHistorySchema.methods.getFormattedDate = function () {
+  // Format date to "Month day, Year"
+  const options = { month: "long", day: "numeric", year: "numeric" };
+  return new Intl.DateTimeFormat("en-US", options).format(this.date);
+};
 
 const TransactionHistory = mongoose.model("TransactionHistory", transactionHistorySchema);
 

@@ -7,6 +7,7 @@ const cloudinary = require("cloudinary").v2
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = require("../Middleware/jwt")
+const transactionHistoryModule = require("../Utils/transactionHistory");
 
 
 // ! Route to handle image upload
@@ -38,6 +39,11 @@ router.post("/upload-profile-image", upload.single("profileImage"), async (req, 
     res.status(500).json({ message: "Failed to upload profile image" });
   }
 });
+
+// Function to create transaction history
+async function createTransactionHistory(userId, status, message) {
+  return transactionHistoryModule.createTransactionHistory(userId, status, message);
+}
 
 
 // ! Route to handle profile image deletion
@@ -176,6 +182,14 @@ router.post("/transfer-funds", async (req, res) => {
     const token = req.header("Authorization").replace("Bearer ", "");
     const decodedToken = jwt.verify(token, JWT_SECRET);
     const senderUserId = decodedToken.userId;
+    const userId = decodedToken.userId;
+
+    // Fetch sender's information
+    const sender = await User.findById(userId);
+
+    if (!sender) {
+      return res.status(400).send({ error: "Sender not found" });
+    }
 
     // Fetch sender's wallet and user information
     const senderWallet = await UserWallet.findOne({ userId: senderUserId });
@@ -183,6 +197,7 @@ router.post("/transfer-funds", async (req, res) => {
 
     // Check if the sender has enough balance
     if (senderWallet.balance < amount) {
+      await createTransactionHistory(userId, "failed", `Failed to send funds to ${receiverAccountNumber}`)
       return res.status(400).send({ error: "Insufficient balance" });
     }
 
@@ -213,6 +228,13 @@ router.post("/transfer-funds", async (req, res) => {
     // Update receiver's balance
     receiverWallet.balance += amount;
     await receiverWallet.save();
+
+    // Log the buy transaction
+    await createTransactionHistory(userId, "successful", `You Sent ${amount} USD to ${receiverAccountNumber}`);
+
+    // Log the transfer transaction for the receiver
+    await createTransactionHistory(receiverWallet.userId, "received", `You Received ${amount} USD from ${sender.firstName} ${sender.lastName}`);
+
 
     res.status(200).send({ message: "Funds transferred successfully" });
   } catch (error) {
