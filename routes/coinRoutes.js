@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const UserWallet = require("../model/walletModel");
+const User = require("../model/userModel");
 const supportedCoins = require("../Utils/supportedCoins");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = require("../Middleware/jwt")
@@ -286,6 +287,13 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     const senderUserId = decodedToken.userId;
     const userId = decodedToken.userId;
 
+    // Fetch sender's information
+    const sender = await User.findById(userId);
+
+    if (!sender) {
+      return res.status(400).send({ error: "Sender not found" });
+    }
+
     // Fetch sender's wallet
     const senderWallet = await UserWallet.findOne({ userId: senderUserId });
 
@@ -337,8 +345,11 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     await senderWallet.save();
     await receiverWallet.save();
     
-    // Log the transfer transaction
-    await createTransactionHistory(userId, "successful", `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
+    // Log the transfer transaction for the sender
+    await createTransactionHistory(senderUserId, "successful", `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
+
+    // Log the transfer transaction for the receiver
+    await createTransactionHistory(receiverWallet.userId, "successful", `You Received ${cryptoAmountToSend} ${CryptoToSend} from ${sender.firstName} ${sender.lastName}`);
 
     res.status(200).send({
       message: `Transferred ${cryptoAmountToSend} ${CryptoToSend} successfully`,
@@ -362,7 +373,6 @@ router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
     res.status(500).send({ error: "Internal server error" });
   }
 });
-
 
 
 // Route to fetch user's coin data
