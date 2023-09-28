@@ -197,6 +197,7 @@ router.post("/transfer-funds", async (req, res) => {
 
     // Check if the sender has enough balance
     if (senderWallet.balance < amount) {
+      await createTransactionHistory(userId, "failed", `Failed to send funds to ${receiverAccountNumber}`)
       return res.status(400).send({ error: "Insufficient balance" });
     }
 
@@ -232,7 +233,7 @@ router.post("/transfer-funds", async (req, res) => {
     await createTransactionHistory(userId, "successful", `You Sent ${amount} USD to ${receiverAccountNumber}`);
 
     // Log the transfer transaction for the receiver
-    await createTransactionHistory(receiverWallet.userId, "successful", `You Received ${amount} USD from ${sender.firstName} ${sender.lastName}`);
+    await createTransactionHistory(receiverWallet.userId, "received", `You Received ${amount} USD from ${sender.firstName} ${sender.lastName}`);
 
 
     res.status(200).send({ message: "Funds transferred successfully" });

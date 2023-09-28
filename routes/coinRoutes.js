@@ -89,6 +89,8 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
 
     // Check if the user has sufficient balance to make the purchase
     if (totalCost > wallet.balance) {
+      // Log the failed transaction
+  await createTransactionHistory(userId, "failed", `Failed to purchase ${coinSymbol}`);
       return res.status(400).send({ error: "Insufficient balance to make the purchase" });
     }
 
@@ -154,6 +156,7 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
     const holding = wallet.cryptoHoldings.find((holding) => holding.coinSymbol === coinSymbol);
 
     if (!holding || holding.amount < amountToSell) {
+      await createTransactionHistory(userId, "failed", `Failed to sell ${coinSymbol}`);
       return res.status(400).send({ error: "Insufficient balance or no holdings for sale" });
     }
 
@@ -227,6 +230,7 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
     const fromCoinHolding = wallet.cryptoHoldings.find((holding) => holding.coinSymbol === fromCoinSymbol);
 
     if (!fromCoinHolding || fromCoinHolding.amount < amountToSwap) {
+      await createTransactionHistory(userId, "failed", `Failed to swap ${fromCoinSymbol}`);
       return res.status(400).send({ error: "Insufficient balance or no holdings for swapping" });
     }
 
@@ -307,6 +311,7 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     );
 
     if (!senderCryptoHolding || senderCryptoHolding.amount < cryptoAmountToSend) {
+      await createTransactionHistory(senderUserId, "failed", `Failed to send ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
       return res.status(400).send({ error: "Insufficient balance" });
     }
 
@@ -349,7 +354,7 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     await createTransactionHistory(senderUserId, "successful", `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
 
     // Log the transfer transaction for the receiver
-    await createTransactionHistory(receiverWallet.userId, "successful", `You Received ${cryptoAmountToSend} ${CryptoToSend} from ${sender.firstName} ${sender.lastName}`);
+    await createTransactionHistory(receiverWallet.userId, "received", `You Received ${cryptoAmountToSend} ${CryptoToSend} from ${sender.firstName} ${sender.lastName}`);
 
     res.status(200).send({
       message: `Transferred ${cryptoAmountToSend} ${CryptoToSend} successfully`,
