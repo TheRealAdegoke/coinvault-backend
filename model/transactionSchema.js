@@ -1,33 +1,29 @@
 const mongoose = require("mongoose");
 
-const transactionSchema = new mongoose.Schema({
+const transactionHistorySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
-  coinSymbol: {
-    type: String,
-    required: true,
-  },
-  amount: {
-    type: Number,
-    required: true,
-  },
-  totalCost: {
-    type: Number,
-    required: true,
-  },
-  cryptoPrice: {
-    type: Number,
-    required: true,
-  },
-  date: {
-    type: Date,
-    default: Date.now,
-    required: true,
-  },
+  histories: [
+    {
+      status: {
+        type: String,
+        enum: ["successful", "failed"],
+        required: true,
+      },
+      message: {
+        type: String,
+        required: true,
+      },
+      date: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
 });
 
-const Transaction = mongoose.model("Transaction", transactionSchema);
+const TransactionHistory = mongoose.model("TransactionHistory", transactionHistorySchema);
 
-module.exports = Transaction;
+module.exports = TransactionHistory;
