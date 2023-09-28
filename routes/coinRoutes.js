@@ -5,6 +5,7 @@ const UserWallet = require("../model/walletModel");
 const supportedCoins = require("../Utils/supportedCoins");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = require("../Middleware/jwt")
+const transactionHistoryModule = require("../Utils/transactionHistory");
 
 
 // Function to fetch cryptocurrency price from CoinGecko API
@@ -24,6 +25,11 @@ async function getCryptoPrice(coinSymbol) {
     console.error("Error fetching cryptocurrency price:", error.message);
     throw new Error(`Failed to fetch cryptocurrency price for ${coinSymbol}: ${error.message}`);
   }
+}
+
+// Function to create transaction history
+async function createTransactionHistory(userId, status, message) {
+  return transactionHistoryModule.createTransactionHistory(userId, status, message);
 }
 
 // Route to buy cryptocurrency
@@ -102,6 +108,9 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
     // Save the updated user document
     await wallet.save();
 
+    // Log the buy transaction
+    await createTransactionHistory(userId, "successful", `You Purchased ${amountToBuy} ${coinSymbol}`);
+
     res.status(200).send({
       message: "Cryptocurrency purchased successfully",
       walletBalance: wallet.balance,
@@ -112,7 +121,6 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
     res.status(500).send({ error: "Internal server error" });
   }
 });
-
 
 // Route to sell cryptocurrency
 router.post("/v1/auth/sell-crypto", async (req, res) => {
@@ -171,6 +179,10 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
 
     // Save the updated user document
     await wallet.save();
+
+    // Log the sell transaction
+    await createTransactionHistory(userId, "successful", `You Sold ${amountToSell} ${coinSymbol}`);
+
 
     res.status(200).send({
       message: "Cryptocurrency sold successfully",
@@ -249,6 +261,9 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
     // Save the updated user document
     await wallet.save();
 
+    // Log the swap transaction
+    await createTransactionHistory(userId, "successful", `You Swapped ${amountToSwap} ${fromCoinSymbol} to ${toCoinSymbol}`);
+
     res.status(200).send({
       message: `Cryptocurrency swapped successfully from ${fromCoinSymbol} to ${toCoinSymbol}`,
       walletBalance: wallet.balance,
@@ -269,6 +284,7 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     const token = req.header("Authorization").replace("Bearer ", "");
     const decodedToken = jwt.verify(token, JWT_SECRET);
     const senderUserId = decodedToken.userId;
+    const userId = decodedToken.userId;
 
     // Fetch sender's wallet
     const senderWallet = await UserWallet.findOne({ userId: senderUserId });
@@ -320,6 +336,9 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     // Save the updated sender and receiver documents
     await senderWallet.save();
     await receiverWallet.save();
+    
+    // Log the transfer transaction
+    await createTransactionHistory(userId, "successful", `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
 
     res.status(200).send({
       message: `Transferred ${cryptoAmountToSend} ${CryptoToSend} successfully`,
@@ -331,6 +350,19 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     res.status(500).send({ error: "Internal server error" });
   }
 });
+
+// Route to fetch transaction history
+router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const transactions = await transactionHistoryModule.getTransactionHistory(userId);
+    res.status(200).json(transactions);
+  } catch (error) {
+    console.error("Error fetching transaction history:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
 
 
 // Route to fetch user's coin data
