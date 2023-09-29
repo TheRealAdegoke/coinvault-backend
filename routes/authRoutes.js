@@ -5,7 +5,6 @@ const User = require("../model/userModel");
 const UserWallet = require("../model/walletModel");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = require("../Middleware/jwt")
 const { generateRandomAddress } = require("../Middleware/generateRandomAddress")
 const supportedCoins = require("../Utils/supportedCoins")
 

@@ -5,7 +5,6 @@ const UserWallet = require("../model/walletModel");
 const User = require("../model/userModel");
 const supportedCoins = require("../Utils/supportedCoins");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = require("../Middleware/jwt")
 const transactionHistoryModule = require("../Utils/transactionHistory");
 
 
