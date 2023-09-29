@@ -6,7 +6,6 @@ const router = express.Router();
 const cloudinary = require("cloudinary").v2
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = require("../Middleware/jwt")
 const transactionHistoryModule = require("../Utils/transactionHistory");
 
 
