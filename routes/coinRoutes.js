@@ -111,7 +111,7 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
     await wallet.save();
 
     // Log the buy transaction
-    await createTransactionHistory(userId, "successful", `You Purchased ${amountToBuy} ${coinSymbol}`);
+    await createTransactionHistory(userId, "successful", `You Purchased ${amountToBuy.toFixed(4)} ${coinSymbol}`);
 
     res.status(200).send({
       message: "Cryptocurrency purchased successfully",
@@ -184,7 +184,7 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
     await wallet.save();
 
     // Log the sell transaction
-    await createTransactionHistory(userId, "successful", `You Sold ${amountToSell} ${coinSymbol}`);
+    await createTransactionHistory(userId, "successful", `You Sold ${amountToSell.toFixed(4)} ${coinSymbol}`);
 
 
     res.status(200).send({
@@ -266,7 +266,7 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
     await wallet.save();
 
     // Log the swap transaction
-    await createTransactionHistory(userId, "successful", `You Swapped ${amountToSwap} ${fromCoinSymbol} to ${toCoinSymbol}`);
+    await createTransactionHistory(userId, "successful", `You Swapped ${amountToSwap.toFixed(4)} ${fromCoinSymbol} to ${toCoinSymbol}`);
 
     res.status(200).send({
       message: `Cryptocurrency swapped successfully from ${fromCoinSymbol} to ${toCoinSymbol}`,
@@ -353,10 +353,10 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     await createTransactionHistory(senderUserId, "successful", `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}`);
 
     // Log the transfer transaction for the receiver
-    await createTransactionHistory(receiverWallet.userId, "received", `You Received ${cryptoAmountToSend} ${CryptoToSend} from ${sender.firstName} ${sender.lastName}`);
+    await createTransactionHistory(receiverWallet.userId, "received", `You Received ${cryptoAmountToSend.toFixed(4)} ${CryptoToSend} from ${sender.firstName} ${sender.lastName}`);
 
     res.status(200).send({
-      message: `Transferred ${cryptoAmountToSend} ${CryptoToSend} successfully`,
+      message: `Transferred ${cryptoAmountToSend.toFixed(4)} ${CryptoToSend} successfully`,
       senderBalance: senderWallet.balance,
       receiverBalance: receiverWallet.balance,
     });
