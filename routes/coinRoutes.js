@@ -89,7 +89,7 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
     // Check if the user has sufficient balance to make the purchase
     if (totalCost > wallet.balance) {
       // Log the failed transaction
-  await createTransactionHistory(userId, "failed", `An unexpected error occurred while trying to purchase ${coinSymbol},`);
+  await createTransactionHistory(userId, "failed", `An unexpected error occurred while trying to purchase ${coinSymbol}`);
       return res.status(400).send({ error: "Insufficient balance to make the purchase" });
     }
 
@@ -184,7 +184,7 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
     await wallet.save();
 
     // Log the sell transaction
-    await createTransactionHistory(userId, "successful", `You Successfully sold ${coinSymbol} and ${amountToSell} has been deducted from your wallet`);
+    await createTransactionHistory(userId, "successful", `You Successfully sold ${coinSymbol} and ${amountToSell} ${coinSymbol} has been deducted from your wallet`);
 
 
     res.status(200).send({
