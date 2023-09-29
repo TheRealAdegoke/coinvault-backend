@@ -55,7 +55,7 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
 
     // Retrieve the userId from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decodedToken.userId;
 
     // Fetch user's wallet
@@ -142,7 +142,7 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
 
     // Retrieve the userId from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decodedToken.userId;
 
     // Fetch user's wallet
@@ -216,7 +216,7 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
 
     // Retrieve the userId from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decodedToken.userId;
 
     // Fetch user's wallet
@@ -287,7 +287,7 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
 
     // Retrieve the userId from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const senderUserId = decodedToken.userId;
     const userId = decodedToken.userId;
 
