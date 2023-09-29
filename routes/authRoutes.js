@@ -219,7 +219,7 @@ router.post("/v1/auth/verify-email", async (req, res) => {
     verificationCodes.delete(verificationCode);
 
     // ! Create and sign a JSON Web Token (JWT)
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h", // ! Token expiration time
     });
 
@@ -355,7 +355,7 @@ router.post("/v1/auth/login", async (req, res) => {
     }
 
     // ! Create and sign a JSON Web Token (JWT)
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h", // ! Token expiration time
     });
 
@@ -548,7 +548,7 @@ router.get("/v1/auth/user", async (req, res) => {
   try {
     // Retrieve the userId and account number from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decodedToken.userId;
 
     // Fetch the account number from the user's wallet or from wherever it's stored

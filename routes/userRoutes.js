@@ -180,7 +180,7 @@ router.post("/transfer-funds", async (req, res) => {
 
     // Retrieve the userId and account number from the authenticated user's JWT token
     const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, JWT_SECRET);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const senderUserId = decodedToken.userId;
     const userId = decodedToken.userId;
 
