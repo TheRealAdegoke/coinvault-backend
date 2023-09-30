@@ -370,8 +370,8 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
 router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    const transactions = await transactionHistoryModule.getTransactionHistory(userId);
-    res.status(200).json(transactions);
+    const { transactions, unreadCount } = await transactionHistoryModule.getTransactionHistoryWithUnreadCount(userId);
+    res.status(200).json({ transactions, unreadCount });
   } catch (error) {
     console.error("Error fetching transaction history:", error);
     res.status(500).send({ error: "Internal server error" });
