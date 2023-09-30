@@ -26,6 +26,10 @@ const transactionHistorySchema = new mongoose.Schema({
       },
     },
   ],
+  readAll: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const TransactionHistory = mongoose.model("TransactionHistory", transactionHistorySchema);
