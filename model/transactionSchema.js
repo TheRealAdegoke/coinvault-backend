@@ -5,6 +5,10 @@ const transactionHistorySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
+  notificationCount: {
+    type: Number,
+    default: 0,
+  },
   histories: [
     {
       status: {
