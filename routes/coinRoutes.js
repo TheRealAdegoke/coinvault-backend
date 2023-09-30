@@ -366,63 +366,14 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
   }
 });
 
+// Route to fetch transaction history
 router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-
-    // Fetch and mark transactions as read
     const transactions = await transactionHistoryModule.getTransactionHistory(userId);
-    await transactionHistoryModule.markTransactionsAsRead(userId);
-
     res.status(200).json(transactions);
   } catch (error) {
     console.error("Error fetching transaction history:", error);
-    res.status(500).send({ error: "Internal server error" });
-  }
-});
-
-router.get("/auth/notification-count/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Find the user's transaction history
-    const userTransactionHistory = await TransactionHistory.findOne({ userId });
-
-    if (!userTransactionHistory) {
-      return res.json({ count: 0 });
-    }
-
-    // Return the notification count
-    res.json({ count: userTransactionHistory.notificationCount });
-  } catch (error) {
-    console.error("Error fetching notification count:", error);
-    res.status(500).send({ error: "Internal server error" });
-  }
-});
-
-router.put("/auth/reset-notification-count/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Find the user's transaction history
-    const userTransactionHistory = await TransactionHistory.findOne({ userId });
-
-    if (!userTransactionHistory) {
-      return res.status(404).send({ error: "User not found" });
-    }
-
-    // Mark all transactions as read
-    userTransactionHistory.histories.forEach((history) => {
-      history.read = true;
-    });
-
-    // Update the notification count and save the transaction history
-    userTransactionHistory.notificationCount = 0;
-    await userTransactionHistory.save();
-
-    res.status(200).json({ message: "Notification count reset successfully" });
-  } catch (error) {
-    console.error("Error resetting notification count:", error);
     res.status(500).send({ error: "Internal server error" });
   }
 });
