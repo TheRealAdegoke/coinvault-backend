@@ -366,11 +366,14 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
   }
 });
 
-// Route to fetch transaction history
 router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Fetch and mark transactions as read
     const transactions = await transactionHistoryModule.getTransactionHistory(userId);
+    await transactionHistoryModule.markTransactionsAsRead(userId);
+
     res.status(200).json(transactions);
   } catch (error) {
     console.error("Error fetching transaction history:", error);

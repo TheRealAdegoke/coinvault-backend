@@ -10,7 +10,7 @@ async function createTransactionHistory(userId, status, message) {
     }
 
     // Add the new transaction to the histories array
-    userTransactionHistory.histories.push({ status, message });
+    userTransactionHistory.histories.push({ status, message, read: false });
 
     // Save the updated transaction history
     await userTransactionHistory.save();
@@ -38,7 +38,22 @@ async function getTransactionHistory(userId) {
   }
 }
 
+async function markTransactionsAsRead(userId) {
+  try {
+    // Find and update transactions to mark them as read
+    await TransactionHistory.updateMany(
+      { userId },
+      { $set: { "histories.$[elem].read": true } },
+      { arrayFilters: [{ "elem.read": false }] }
+    );
+  } catch (error) {
+    console.error("Error marking transactions as read:", error);
+    throw new Error("Failed to mark transactions as read");
+  }
+}
+
 module.exports = {
   createTransactionHistory,
   getTransactionHistory,
+  markTransactionsAsRead,
 };
