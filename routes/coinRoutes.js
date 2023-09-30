@@ -381,6 +381,52 @@ router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
   }
 });
 
+router.put("/auth/reset-notification-count/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find the user's transaction history
+    const userTransactionHistory = await TransactionHistory.findOne({ userId });
+
+    if (!userTransactionHistory) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    // Mark all transactions as read
+    userTransactionHistory.histories.forEach(history => {
+      history.read = true;
+    });
+
+    // Save the updated transaction history
+    await userTransactionHistory.save();
+
+    res.status(200).json({ message: "Notification count reset successfully" });
+  } catch (error) {
+    console.error("Error resetting notification count:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+router.get("/auth/notification-count/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find the user's transaction history
+    const userTransactionHistory = await TransactionHistory.findOne({ userId });
+
+    if (!userTransactionHistory) {
+      return res.json({ count: 0 });
+    }
+
+    // Return the count of unread transactions
+    const unreadCount = userTransactionHistory.histories.filter(history => !history.read).length;
+    res.json({ count: unreadCount });
+  } catch (error) {
+    console.error("Error fetching notification count:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
 
 // Route to fetch user's coin data
 router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
