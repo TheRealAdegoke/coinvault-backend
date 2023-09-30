@@ -38,27 +38,7 @@ async function getTransactionHistory(userId) {
   }
 }
 
-async function getTransactionHistoryWithUnreadCount(userId) {
-  try {
-    // Find the user's transaction history
-    const userTransactionHistory = await TransactionHistory.findOne({ userId });
-
-    if (!userTransactionHistory) {
-      return { transactions: [], unreadCount: 0 };
-    }
-
-    // Count unread transactions
-    const unreadCount = userTransactionHistory.histories.filter(history => !history.read).length;
-
-    return { transactions: userTransactionHistory.histories, unreadCount };
-  } catch (error) {
-    console.error("Error fetching transaction history:", error);
-    throw new Error("Failed to fetch transaction history");
-  }
-}
-
 module.exports = {
   createTransactionHistory,
   getTransactionHistory,
-  getTransactionHistoryWithUnreadCount,
 };
