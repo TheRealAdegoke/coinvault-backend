@@ -6,6 +6,7 @@ const User = require("../model/userModel");
 const supportedCoins = require("../Utils/supportedCoins");
 const jwt = require("jsonwebtoken");
 const transactionHistoryModule = require("../Utils/transactionHistory");
+const notificationModule = require("../Utils/NotificationHistory");
 
 
 // Function to fetch cryptocurrency price from CoinGecko API
@@ -458,6 +459,30 @@ router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
   } catch (error) {
     console.error("Error fetching user crypto holdings:", error.message);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Route to fetch notifications
+router.get("/v1/auth/notifications/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const notifications = await notificationModule.getNotifications(userId);
+    res.status(200).json(notifications);
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+// Route to mark all notifications as read
+router.put("/v1/auth/notifications/mark-as-read/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    await notificationModule.markAllAsRead(userId);
+    res.status(200).send("Notifications marked as read");
+  } catch (error) {
+    console.error("Error marking notifications as read:", error);
+    res.status(500).send({ error: "Internal server error" });
   }
 });
 
