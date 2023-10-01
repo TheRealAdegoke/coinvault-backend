@@ -397,14 +397,24 @@ router.put("/v1/auth/mark-notifications-as-read/:userId", async (req, res) => {
 
       // Save the updated transaction history
       await userTransactionHistory.save();
-    }
 
-    res.status(200).send("Notifications marked as read");
+      // Calculate the updated unread count
+      const updatedUnreadCount = userTransactionHistory.histories.filter(
+        (transaction) => transaction.unread
+      ).length;
+
+      // Send the updated unread count in the response
+      res.status(200).json({ unreadCount: updatedUnreadCount });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
   } catch (error) {
     console.error("Error marking notifications as read:", error);
     res.status(500).send({ error: "Internal server error" });
   }
 });
+
+
 
 // Route to fetch user's coin data
 router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
