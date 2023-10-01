@@ -20,18 +20,9 @@ const transactionHistorySchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
       },
-      unread: {
-        type: Boolean,
-        default: true, // Set to true by default for new transactions
-      },
     },
   ],
-  readAll: {
-    type: Boolean,
-    default: false,
-  },
 });
-
 
 const TransactionHistory = mongoose.model("TransactionHistory", transactionHistorySchema);
 
