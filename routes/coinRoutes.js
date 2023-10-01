@@ -6,7 +6,6 @@ const User = require("../model/userModel");
 const supportedCoins = require("../Utils/supportedCoins");
 const jwt = require("jsonwebtoken");
 const transactionHistoryModule = require("../Utils/transactionHistory");
-const TransactionHistory = require("../model/transactionSchema");
 
 
 // Function to fetch cryptocurrency price from CoinGecko API
@@ -378,42 +377,6 @@ router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
     res.status(500).send({ error: "Internal server error" });
   }
 });
-
-// Add a new route to mark all notifications as read
-router.put("/v1/auth/mark-notifications-as-read/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Find the user's transaction history
-    const userTransactionHistory = await TransactionHistory.findOne({ userId });
-
-    if (userTransactionHistory) {
-      // Mark all unread transactions as read
-      userTransactionHistory.histories.forEach((transaction) => {
-        if (transaction.unread) {
-          transaction.unread = false;
-        }
-      });
-
-      // Save the updated transaction history
-      await userTransactionHistory.save();
-
-      // Calculate the updated unread count
-      const updatedUnreadCount = userTransactionHistory.histories.filter(
-        (transaction) => transaction.unread
-      ).length;
-
-      // Send the updated unread count in the response
-      res.status(200).json({ unreadCount: updatedUnreadCount });
-    } else {
-      res.status(404).json({ error: "User not found" });
-    }
-  } catch (error) {
-    console.error("Error marking notifications as read:", error);
-    res.status(500).send({ error: "Internal server error" });
-  }
-});
-
 
 
 // Route to fetch user's coin data
