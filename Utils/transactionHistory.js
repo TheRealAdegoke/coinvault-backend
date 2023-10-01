@@ -1,4 +1,5 @@
 const TransactionHistory = require("../model/transactionSchema");
+const Notification = require("../model/notificationSchema");
 
 async function createTransactionHistory(userId, status, message) {
   try {
@@ -10,10 +11,25 @@ async function createTransactionHistory(userId, status, message) {
     }
 
     // Add the new transaction to the histories array
-    userTransactionHistory.histories.push({ status, message });
+    userTransactionHistory.histories.push({ status, message, date: Date.now() });
 
     // Save the updated transaction history
     await userTransactionHistory.save();
+
+    // Create a notification for the user
+    await Notification.findOneAndUpdate(
+      { userId },
+      {
+        $push: {
+          notifications: {
+            status: "unread",
+            message,
+            date: Date.now(),
+          },
+        },
+      },
+      { upsert: true }
+    );
 
     return userTransactionHistory;
   } catch (error) {
