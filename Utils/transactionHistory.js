@@ -9,8 +9,8 @@ async function createTransactionHistory(userId, status, message) {
       userTransactionHistory = new TransactionHistory({ userId, histories: [] });
     }
 
-    // Add the new transaction to the histories array
-    userTransactionHistory.histories.push({ status, message });
+    // Add the new transaction to the histories array with unread set to true
+    userTransactionHistory.histories.push({ status, message, unread: true });
 
     // Save the updated transaction history
     await userTransactionHistory.save();
