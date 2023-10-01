@@ -378,36 +378,6 @@ router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
   }
 });
 
-// Route to mark all transactions as read
-router.put("/v1/auth/mark-all-as-read/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Find the user's transaction history
-    const userTransactionHistory = await TransactionHistory.findOne({ userId });
-
-    if (!userTransactionHistory) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Mark all transactions as read
-    userTransactionHistory.histories.forEach((transaction) => {
-      transaction.read = true;
-    });
-
-    // Set the readAll flag to true
-    userTransactionHistory.readAll = true;
-
-    // Save the updated transaction history
-    await userTransactionHistory.save();
-
-    res.status(200).json({ message: "All transactions marked as read" });
-  } catch (error) {
-    console.error("Error marking all as read:", error);
-    res.status(500).send({ error: "Internal server error" });
-  }
-});
-
 
 // Route to fetch user's coin data
 router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {

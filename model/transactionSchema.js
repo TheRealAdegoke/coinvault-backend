@@ -20,9 +20,9 @@ const transactionHistorySchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
       },
-      read: {
+      unread: {
         type: Boolean,
-        default: false,
+        default: true, // Set to true by default for new transactions
       },
     },
   ],
@@ -31,6 +31,7 @@ const transactionHistorySchema = new mongoose.Schema({
     default: false,
   },
 });
+
 
 const TransactionHistory = mongoose.model("TransactionHistory", transactionHistorySchema);
 
