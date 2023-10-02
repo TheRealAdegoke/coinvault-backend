@@ -24,6 +24,7 @@ async function createTransactionHistory(userId, status, message) {
           notifications: {
             status: "unread",
             message,
+            messageStatus: status, // Link messageStatus to the status in transactionSchema
             date: Date.now(),
           },
         },

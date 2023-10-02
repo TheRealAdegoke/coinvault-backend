@@ -10,12 +10,16 @@ const notificationSchema = new mongoose.Schema({
       status: {
         type: String,
         enum: ["unread", "read"],
-        default: "unread",
+        default: "unread", // Default status is unread
         required: true,
       },
       message: {
         type: String,
         required: true,
+      },
+      messageStatus: {
+        type: String,
+        required: true
       },
       date: {
         type: Date,
@@ -26,5 +30,6 @@ const notificationSchema = new mongoose.Schema({
 });
 
 const Notification = mongoose.model("Notification", notificationSchema);
+
 
 module.exports = Notification;
