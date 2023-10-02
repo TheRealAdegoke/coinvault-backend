@@ -9,6 +9,9 @@ const transactionHistoryModule = require("../Utils/transactionHistory");
 const notificationModule = require("../Utils/NotificationHistory");
 
 
+// WebSocket integration
+module.exports = function (io) {
+
 // Function to fetch cryptocurrency price from CoinGecko API
 async function getCryptoPrice(coinSymbol) {
   try {
@@ -114,6 +117,13 @@ router.post("/v1/auth/buy-crypto", async (req, res) => {
     // Log the buy transaction
     await createTransactionHistory(userId, "successful", `Your Purchase of ${coinSymbol} was successful and ${amountToBuy} USD has been deducted from your account.`);
 
+    // Emit a WebSocket event to notify the frontend about the successful purchase
+      io.emit('cryptoPurchase', {
+        message: `Your Purchase of ${coinSymbol} was successful and ${amountToBuy} USD has been deducted from your account.`,
+        walletBalance: wallet.balance,
+        cryptoHoldings: wallet.cryptoHoldings,
+      });
+
     res.status(200).send({
       message: "Cryptocurrency purchased successfully",
       walletBalance: wallet.balance,
@@ -187,6 +197,12 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
     // Log the sell transaction
     await createTransactionHistory(userId, "successful", `You Successfully sold ${coinSymbol} and ${amountToSell} ${coinSymbol} has been deducted from your wallet`);
 
+    // Emit a WebSocket event to notify the frontend about the successful sale
+      io.emit('cryptoSale', {
+        message: `You Successfully sold ${coinSymbol} and ${amountToSell} ${coinSymbol} has been deducted from your wallet`,
+        walletBalance: wallet.balance,
+        cryptoHoldings: wallet.cryptoHoldings,
+      });
 
     res.status(200).send({
       message: "Cryptocurrency sold successfully",
@@ -268,6 +284,13 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
 
     // Log the swap transaction
     await createTransactionHistory(userId, "successful", `You successfully Swapped ${amountToSwap} ${fromCoinSymbol} to ${toCoinSymbol}`);
+
+    // Emit a WebSocket event to notify the frontend about the successful swap
+      io.emit('cryptoSwap', {
+        message: `You successfully Swapped ${amountToSwap} ${fromCoinSymbol} to ${toCoinSymbol}`,
+        walletBalance: wallet.balance,
+        cryptoHoldings: wallet.cryptoHoldings,
+      });
 
     res.status(200).send({
       message: `Cryptocurrency swapped successfully from ${fromCoinSymbol} to ${toCoinSymbol}`,
@@ -356,6 +379,14 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     // Log the transfer transaction for the receiver
     await createTransactionHistory(receiverWallet.userId, "received", `You Received ${cryptoAmountToSend} ${CryptoToSend} from ${sender.firstName} ${sender.lastName}. ${cryptoAmountToSend} ${CryptoToSend} has been added to your wallet`);
 
+    // Emit a WebSocket event to notify the frontend about the successful transfer
+      io.emit('cryptoTransfer', {
+        senderUserId,
+        receiverUserId: receiverWallet.userId,
+        message: `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}. ${cryptoAmountToSend} ${CryptoToSend} has been deducted from your wallet`,
+      });
+    
+
     res.status(200).send({
       message: `Transferred ${cryptoAmountToSend.toFixed(4)} ${CryptoToSend} successfully`,
       senderBalance: senderWallet.balance,
@@ -372,6 +403,8 @@ router.get("/v1/auth/transaction-history/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const transactions = await transactionHistoryModule.getTransactionHistory(userId);
+    // Emit a WebSocket event to notify the frontend about the fetched transaction history
+    io.emit('transactionHistory', { userId, transactions });
     res.status(200).json(transactions);
   } catch (error) {
     console.error("Error fetching transaction history:", error);
@@ -456,6 +489,9 @@ router.get('/v1/auth/user-crypto-holdings/:userId', async (req, res) => {
     }
 
     res.status(200).json(userCryptoData);
+
+    // Emit a WebSocket event to notify the frontend about the fetched user's coin data
+    io.emit('userCryptoData', { userId, userCryptoData });
   } catch (error) {
     console.error("Error fetching user crypto holdings:", error.message);
     res.status(500).json({ error: "Internal server error" });
@@ -467,6 +503,8 @@ router.get("/v1/auth/notifications/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const notifications = await notificationModule.getNotifications(userId);
+    // Emit a WebSocket event to notify the frontend about the fetched notifications
+    io.emit('notifications', { userId, notifications });
     res.status(200).json(notifications);
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -479,6 +517,8 @@ router.put("/v1/auth/notifications/mark-as-read/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     await notificationModule.markAllAsRead(userId);
+    // Emit a WebSocket event to notify the frontend about marking notifications as read
+    io.emit('markNotificationsAsRead', { userId });
     res.status(200).send("Notifications marked as read");
   } catch (error) {
     console.error("Error marking notifications as read:", error);
@@ -486,5 +526,6 @@ router.put("/v1/auth/notifications/mark-as-read/:userId", async (req, res) => {
   }
 });
 
+ return router;
+};
 
-module.exports = router;
