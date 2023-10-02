@@ -1,5 +1,5 @@
 const Notification = require("../model/notificationSchema");
-const TransactionHistory = require("../model/transactionSchema");
+
 
 async function getNotifications(userId) {
   try {
@@ -26,6 +26,7 @@ async function markAllAsRead(userId) {
     throw new Error("Failed to mark notifications as read");
   }
 }
+
 
 module.exports = {
   getNotifications,
