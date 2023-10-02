@@ -1,13 +1,20 @@
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
+const socketIo = require("socket.io");
+const cookieParser = require("cookie-parser");
 const connectDB = require("./Database/connect");
 require("dotenv").config();
-const app = express();
-const cookieParser = require("cookie-parser");
 
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+const PORT = process.env.PORT || 8080;
+
+// Middleware
 app.use(cookieParser());
 app.use(express.json());
-
 app.use(
   cors({
     origin: [
@@ -23,30 +30,31 @@ app.use(
   })
 );
 
-const authRoute = require("./routes/authRoutes");
-const userRoute = require("./routes/userRoutes");
-const coinRoute = require("./routes/coinRoutes");
-
-// API endpoint
+// Routes
 app.get("/", (req, res) => {
   res.send("<h1>Giddy Up Soldier</h1>");
 });
 
+const authRoute = require("./routes/authRoutes");
+const userRoute = require("./routes/userRoutes");
+const coinRoute = require("./routes/coinRoutes");
+
 app.use("/", authRoute);
 app.use("/", userRoute);
-app.use("/", coinRoute);
 
-const port = process.env.PORT || 8080;
+// WebSocket integration
+app.use("/", coinRoute(io));
 
-const start = async () => {
+// Start the server
+const startServer = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
-    app.listen(port, () => {
-      console.log(`Server is listening on port ${port}...`);
+    server.listen(PORT, () => {
+      console.log(`Server is listening on port ${PORT}...`);
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error starting server:", error);
   }
 };
 
-start();
+startServer();
