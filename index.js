@@ -30,6 +30,30 @@ app.use(
   })
 );
 
+// Additional CORS headers for Socket.io
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'https://coinvault.onrender.com',
+      'https://www.google.com',
+      'http://localhost:5173',
+      'https://coin-vault.vercel.app',
+      'http://localhost:8080',
+      'http://192.168.43.251:5173',
+  ];
+
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+
+  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, UPDATE, PUT, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  next();
+});
+
 // Routes
 app.get("/", (req, res) => {
   res.send("<h1>Giddy Up Soldier</h1>");
