@@ -354,7 +354,7 @@ router.post("/v1/auth/transfer-crypto", async (req, res) => {
     await createTransactionHistory(senderUserId, "successful", `You Transferred ${cryptoAmountToSend} ${CryptoToSend} to ${receiverCryptoCoinAddress}. ${cryptoAmountToSend} ${CryptoToSend} has been deducted from your wallet`);
 
     // Log the transfer transaction for the receiver
-    await createTransactionHistory(receiverWallet.userId, "received", `You Received ${cryptoAmountToSend} ${CryptoToSend} from ${sender.firstName} ${sender.lastName}. ${cryptoAmountToSend} ${CryptoToSend} has been added to your wallet`);
+    await createTransactionHistory(receiverWallet.userId, "received", `You Received ${cryptoAmountToSend} ${CryptoToSend} from ${sender.firstName} ${sender.lastName} and ${cryptoAmountToSend} ${CryptoToSend} has been added to your wallet`);
 
     res.status(200).send({
       message: `Transferred ${cryptoAmountToSend.toFixed(4)} ${CryptoToSend} successfully`,
