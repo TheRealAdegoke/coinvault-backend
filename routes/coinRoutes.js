@@ -161,8 +161,18 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
   try {
     const { coinSymbol, amountToSell } = req.body;
 
+    // Retrieve the userId from the authenticated user's JWT token
+    const token = req.header("Authorization").replace("Bearer ", "");
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decodedToken.userId;
+
     // Ensure the amount to sell is greater than 0
     if (amountToSell <= 0) {
+      await createTransactionHistory(
+        userId,
+        "failed",
+        `Unable to sell ${amountToSell} ${coinSymbol}, Please input a valid amount`
+      );
       return res.status(400).send({ error: "Invalid amount" });
     }
 
@@ -170,11 +180,6 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
     if (!supportedCoins.includes(coinSymbol)) {
       return res.status(400).send({ error: "Coin not available for sale" });
     }
-
-    // Retrieve the userId from the authenticated user's JWT token
-    const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decodedToken.userId;
 
     // Fetch user's wallet
     const wallet = await UserWallet.findOne({ userId });
@@ -192,7 +197,7 @@ router.post("/v1/auth/sell-crypto", async (req, res) => {
       await createTransactionHistory(
         userId,
         "failed",
-        `An unexpected error occurred while trying to sell ${coinSymbol}`
+        `Unable to sell ${amountToSell} ${coinSymbol}. Ensure that you have enough ${coinSymbol} in your account to cover the sale`
       );
       return res
         .status(400)
@@ -250,8 +255,18 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
   try {
     const { fromCoinSymbol, toCoinSymbol, amountToSwap } = req.body;
 
+    // Retrieve the userId from the authenticated user's JWT token
+    const token = req.header("Authorization").replace("Bearer ", "");
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decodedToken.userId;
+
     // Ensure the amount to swap is greater than 0
     if (amountToSwap <= 0) {
+      await createTransactionHistory(
+        userId,
+        "failed",
+        `Unable to swap ${amountToSwap} ${fromCoinSymbol} to ${toCoinSymbol}, please input a valid amount`
+      );
       return res.status(400).send({ error: "Invalid amount" });
     }
 
@@ -264,11 +279,6 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
         .status(400)
         .send({ error: "One or both coins are not available for swapping" });
     }
-
-    // Retrieve the userId from the authenticated user's JWT token
-    const token = req.header("Authorization").replace("Bearer ", "");
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decodedToken.userId;
 
     // Fetch user's wallet
     const wallet = await UserWallet.findOne({ userId });
@@ -286,7 +296,7 @@ router.post("/v1/auth/swap-crypto", async (req, res) => {
       await createTransactionHistory(
         userId,
         "failed",
-        `An unexpected error occurred while trying to swap ${fromCoinSymbol} to ${toCoinSymbol}`
+        `Unable to swap ${amountToSwap} ${fromCoinSymbol} to ${toCoinSymbol}. Ensure that you have enough ${fromCoinSymbol} to be able to swap to ${toCoinSymbol}`
       );
       return res
         .status(400)
