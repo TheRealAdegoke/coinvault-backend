@@ -408,6 +408,7 @@ router.post("/v1/auth/forgot-password", async (req, res) => {
     // ! Store the reset password token and its expiration time
     resetPasswordTokens.set(token, {
       userId: user._id,
+      expirationTime: Date.now() + 1 * 60 * 60 * 1000, // 1 hour
     });
 
     // ! Send the reset password link to the user's email address
@@ -438,7 +439,7 @@ async function sendResetPasswordEmail(email, userName, token) {
       },
     });
 
-    const resetPasswordLink = `https://coinvault.onrender.com/resetpassword?token=${token}`;
+    const resetPasswordLink = `https://coin-vault.vercel.app/resetpassword?token=${token}`;
 
     const mailOptions = {
       from: process.env.EMAIL_USERNAME,
