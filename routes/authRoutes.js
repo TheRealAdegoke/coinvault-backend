@@ -401,15 +401,13 @@ router.post("/v1/auth/forgot-password", async (req, res) => {
     }
 
     // ! Generate a random token for reset password
-    const token = crypto.randomBytes(32).toString("hex");
-
-    // ! Set token expiration time to 3 minutes
-    const expirationTime = Date.now() + 3 * 60 * 1000; // ! Current time + 3 minutes
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h", // ! Token expiration time
+    });
 
     // ! Store the reset password token and its expiration time
     resetPasswordTokens.set(token, {
       userId: user._id,
-      expirationTime,
     });
 
     // ! Send the reset password link to the user's email address
@@ -446,7 +444,7 @@ async function sendResetPasswordEmail(email, userName, token) {
       from: process.env.EMAIL_USERNAME,
       to: email,
       subject: "Reset Password",
-      text: `Hey there, ${userName},\n\nTo reset your password, please click on the link below:\n\n${resetPasswordLink}\n\nThis link will expire in 3 minutes.\n\nBest regards,\nCoinVault Team`,
+      text: `Hey there, ${userName},\n\nTo reset your password, please click on the link below:\n\n${resetPasswordLink}\n\nThis link will expire in 1 hour.\n\nBest regards,\nCoinVault Team`,
     };
 
     await transporter.sendMail(mailOptions);
