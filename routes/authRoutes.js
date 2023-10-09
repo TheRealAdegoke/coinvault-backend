@@ -332,7 +332,7 @@ router.post("/v1/auth/login", async (req, res) => {
 
     // ! Check if the user exists
     if (!user) {
-      return res.status(401).send({ error: "Invalid username or password" });
+      return res.status(401).send({ error: "Invalid username" });
     }
 
     // ! Fetch the user's wallet data
@@ -343,7 +343,11 @@ router.post("/v1/auth/login", async (req, res) => {
 
     // ! Check if the password is valid
     if (!isPasswordValid) {
-      return res.status(401).send({ error: "Invalid username or password" });
+      return res.status(401).send({ error: "Invalid password" });
+    }
+
+    if (!user && !isPasswordValid) {
+      return res.status(401).send({error: "Invalid username and password"})
     }
 
     // ! Check if the user is verified
