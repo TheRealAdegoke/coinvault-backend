@@ -305,7 +305,14 @@ async function sendVerificationEmail(email, userName, verificationCode) {
       from: process.env.EMAIL_USERNAME,
       to: email,
       subject: "Email Verification",
-      text: `Hey there, ${userName},\n\nThank you for registering with CoinVault!. To complete the registration process, please use the following verification code: ${verificationCode}\n\nBest regards,\nCoinVault Team`,
+       html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f4; border-radius: 10px; padding: 20px; border: 1px solid #ccc;">
+      <h2 style="color: #007BFF;">Welcome to CoinVault!</h2>
+      <p style="font-size: 16px; color: #333;">Hey there, ${userName},</p>
+      <p style="font-size: 16px; color: #333;">Thank you for registering with CoinVault! To complete the registration process, please use the following verification code: <strong style="color: #007BFF;">${verificationCode}</strong></p>
+      <p style="font-size: 16px; color: #333;">Best regards,<br/>CoinVault Team</p>
+    </div>
+  `,
     };
 
     await transporter.sendMail(mailOptions);
