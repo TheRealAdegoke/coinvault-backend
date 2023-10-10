@@ -456,7 +456,14 @@ async function sendResetPasswordEmail(email, userName, token) {
       from: process.env.EMAIL_USERNAME,
       to: email,
       subject: "Reset Password",
-      text: `Hey there, ${userName},\n\nTo reset your password, please click on the link below:\n\n${resetPasswordLink}\n\nThis link will expire in 1 hour.\n\nBest regards,\nCoinVault Team`,
+      html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f4; border-radius: 10px; padding: 20px; border: 1px solid #ccc;">
+      <h2 style="color: #007BFF;">Password Reset!</h2>
+      <p style="font-size: 16px; color: #333;">Hey there, ${userName},</p>
+      <p style="font-size: 16px; color: #333;">To reset your password, please click on the link below: <strong style="color: #007BFF;">${resetPasswordLink}</strong> This link will expire in 1 hour.</p>
+      <p style="font-size: 16px; color: #333;">Best regards,<br/>CoinVault Team</p>
+    </div>
+  `,
     };
 
     await transporter.sendMail(mailOptions);
