@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const axiosRetry = require("axios-retry")
+const axiosRetry = require("axios-retry");
 const UserWallet = require("../model/walletModel");
 const User = require("../model/userModel");
 const supportedCoins = require("../Utils/supportedCoins");
@@ -16,7 +16,6 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Set up axios to automatically retry failed requests
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
-
 
 // Function to fetch cryptocurrency price from CoinGecko API with retry and rate limiting
 async function getCryptoPrice(coinSymbol, retryCount = 3) {
@@ -41,7 +40,7 @@ async function getCryptoPrice(coinSymbol, retryCount = 3) {
       throw new Error(`Failed to fetch cryptocurrency price for ${coinSymbol}`);
     }
   } catch (error) {
-    if (retryCount > 0 && error.response && error.response.status === 429) {
+    if (retryCount > 0 && (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT' || (error.response && error.response.status === 429))) {
       // Retry with an increasing delay
       await delay(1000 * (4 - retryCount));
       return getCryptoPrice(coinSymbol, retryCount - 1);
@@ -50,7 +49,6 @@ async function getCryptoPrice(coinSymbol, retryCount = 3) {
     throw new Error(`Failed to fetch cryptocurrency price for ${coinSymbol}: ${error.message}`);
   }
 }
-
 
 // Function to create transaction history
 async function createTransactionHistory(userId, status, message) {
@@ -541,98 +539,6 @@ router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
         amount = cryptoHolding.amount;
       }
 
-      // Find the coin information in the response data
-      const coinInfo = coinInfoData.find((info) => info.id === coinSymbol);
-
-      if (!coinInfo) {
-        return res
-          .status(400)
-          .json({ error: `Coin information not found for ${coinSymbol}` });
-      }
-
-      // Get the coin image URL from CoinGecko API
-      const imageUrl = coinInfo.image;
-
-      // Get the symbol from CoinGecko API
-      const symbol = coinInfo.symbol || "";
-
-      // Get the 24h price change percentage from CoinGecko API
-      const price_change_percentage_24h =
-        coinInfo.price_change_percentage_24h || 0;
-
-      // Calculate the fiat value (worth in USD)
-      const cryptoPriceInUSD = coinInfo.current_price; // The current price in USD from CoinGecko
-      const fiatValue = amount * cryptoPriceInUSD;
-
-      // Define the address based on your application's logic
-      const address =
-        wallet.cryptoAddresses.get(coinSymbol.toLowerCase()) || "";
-
-      // Create the user's crypto data object
-      const cryptoData = {
-        userId,
-        id: coinSymbol,
-        symbol, // Use the fetched symbol
-        name: coinSymbol.charAt(0).toUpperCase() + coinSymbol.slice(1), // You can fetch the name from CoinGecko API if needed
-        address,
-        amount,
-        fiatValue, // Add the calculated fiat value
-        image: imageUrl, // Use the fetched image URL
-        price_change_percentage_24h,
-      };
-
-      userCryptoData.push(cryptoData);
-    }
-
-    res.status(200).json(userCryptoData);
-  } catch (error) {
-    console.error("Error fetching user crypto holdings:", error.message);
-    res.status(500).json({ error: "Internal server error", details: error.message });
-  }
-});
-
-// Route to fetch notifications
-router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Fetch user's wallet
-    const wallet = await UserWallet.findOne({ userId });
-
-    if (!wallet) {
-      return res.status(400).json({ error: "User wallet not found" });
-    }
-
-    // Create an array to store the user's crypto data
-    const userCryptoData = [];
-
-    // Fetch the current price and additional data of cryptocurrencies from CoinGecko
-    const coinSymbols = supportedCoins.join(",");
-    const coinInfoResponse = await axios.get(
-      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinSymbols}`
-    );
-
-    if (coinInfoResponse.status !== 200) {
-      return res
-        .status(400)
-        .json({ error: "Failed to fetch cryptocurrency information" });
-    }
-
-    const coinInfoData = coinInfoResponse.data;
-
-    // Iterate through supported coins and add them to userCryptoData
-    for (const coinSymbol of supportedCoins) {
-      const cryptoHolding = wallet.cryptoHoldings.find(
-        (holding) => holding.coinSymbol === coinSymbol
-      );
-
-      // Calculate the equivalent amount
-      let amount = 0;
-
-      if (cryptoHolding) {
-        amount = cryptoHolding.amount;
-      }
-
       // Get the coin information in the response data
       const coinInfo = coinInfoData.find((info) => info.id === coinSymbol);
 
@@ -668,6 +574,19 @@ router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
   } catch (error) {
     console.error("Error fetching user crypto holdings:", error.message);
     res.status(500).json({ error: "Internal server error", details: error.message });
+  }
+});
+
+
+// Route to fetch notifications
+router.get("/v1/auth/notifications/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const notifications = await notificationModule.getNotifications(userId);
+    res.status(200).json(notifications);
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).send({ error: "Internal server error" });
   }
 });
 
