@@ -568,7 +568,7 @@ router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
     res.status(200).json(userCryptoData);
   } catch (error) {
     console.error("Error fetching user crypto holdings:", error.message);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error", details: error.message });
   }
 });
 
