@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const axiosRetry = require("axios-retry");
 const UserWallet = require("../model/walletModel");
 const User = require("../model/userModel");
 const supportedCoins = require("../Utils/supportedCoins");
@@ -9,44 +8,28 @@ const jwt = require("jsonwebtoken");
 const transactionHistoryModule = require("../Utils/transactionHistory");
 const notificationModule = require("../Utils/NotificationHistory");
 
-// Example caching using a simple object
-const cache = {};
-
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Set up axios to automatically retry failed requests
-axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
-
-// Function to fetch cryptocurrency price from CoinGecko API with retry and rate limiting
-async function getCryptoPrice(coinSymbol, retryCount = 3) {
+// Function to fetch cryptocurrency price from CoinGecko API
+async function getCryptoPrice(coinSymbol) {
   try {
-    // Check if the value is in the cache
-    if (cache[coinSymbol]) {
-      return cache[coinSymbol];
-    }
-
     const apiUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${coinSymbol}&vs_currencies=usd`;
 
     // Send a GET request to the CoinGecko API
     const response = await axios.get(apiUrl);
 
-    if (response.status === 200 && response.data[coinSymbol] && response.data[coinSymbol].usd) {
-      const price = response.data[coinSymbol].usd;
-
-      // Cache the value for future use
-      cache[coinSymbol] = price;
-      return price;
+    if (
+      response.status === 200 &&
+      response.data[coinSymbol] &&
+      response.data[coinSymbol].usd
+    ) {
+      return response.data[coinSymbol].usd; // Return the USD price of the coin
     } else {
       throw new Error(`Failed to fetch cryptocurrency price for ${coinSymbol}`);
     }
   } catch (error) {
-    if (retryCount > 0 && (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT' || (error.response && error.response.status === 429))) {
-      // Retry with an increasing delay
-      await delay(1000 * (4 - retryCount));
-      return getCryptoPrice(coinSymbol, retryCount - 1);
-    }
     console.error("Error fetching cryptocurrency price:", error.message);
-    throw new Error(`Failed to fetch cryptocurrency price for ${coinSymbol}: ${error.message}`);
+    throw new Error(
+      `Failed to fetch cryptocurrency price for ${coinSymbol}: ${error.message}`
+    );
   }
 }
 
@@ -539,7 +522,7 @@ router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
         amount = cryptoHolding.amount;
       }
 
-      // Get the coin information in the response data
+      // Find the coin information in the response data
       const coinInfo = coinInfoData.find((info) => info.id === coinSymbol);
 
       if (!coinInfo) {
@@ -548,22 +531,34 @@ router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
           .json({ error: `Coin information not found for ${coinSymbol}` });
       }
 
+      // Get the coin image URL from CoinGecko API
+      const imageUrl = coinInfo.image;
+
+      // Get the symbol from CoinGecko API
+      const symbol = coinInfo.symbol || "";
+
       // Get the 24h price change percentage from CoinGecko API
       const price_change_percentage_24h =
         coinInfo.price_change_percentage_24h || 0;
 
       // Calculate the fiat value (worth in USD)
-      const cryptoPriceInUSD = await getCryptoPrice(coinSymbol);
+      const cryptoPriceInUSD = coinInfo.current_price; // The current price in USD from CoinGecko
       const fiatValue = amount * cryptoPriceInUSD;
+
+      // Define the address based on your application's logic
+      const address =
+        wallet.cryptoAddresses.get(coinSymbol.toLowerCase()) || "";
 
       // Create the user's crypto data object
       const cryptoData = {
         userId,
         id: coinSymbol,
-        symbol: coinInfo.symbol || "",
-        name: coinSymbol.charAt(0).toUpperCase() + coinSymbol.slice(1),
+        symbol, // Use the fetched symbol
+        name: coinSymbol.charAt(0).toUpperCase() + coinSymbol.slice(1), // You can fetch the name from CoinGecko API if needed
+        address,
         amount,
-        fiatValue,
+        fiatValue, // Add the calculated fiat value
+        image: imageUrl, // Use the fetched image URL
         price_change_percentage_24h,
       };
 
@@ -573,10 +568,9 @@ router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
     res.status(200).json(userCryptoData);
   } catch (error) {
     console.error("Error fetching user crypto holdings:", error.message);
-    res.status(500).json({ error: "Internal server error", details: error.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 // Route to fetch notifications
 router.get("/v1/auth/notifications/:userId", async (req, res) => {
