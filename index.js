@@ -17,6 +17,7 @@ app.use(
       'https://coin-vault.vercel.app',
       'http://localhost:8080',
       'http://192.168.43.251:5173',
+      'https://coinvault-backend.vercel.app/'
     ],
     methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
     credentials: true, // Enable credentials (cookies, authorization headers, etc.)
