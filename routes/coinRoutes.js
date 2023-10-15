@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const axiosRetry = require("axios-retry")
 const UserWallet = require("../model/walletModel");
 const User = require("../model/userModel");
 const supportedCoins = require("../Utils/supportedCoins");
@@ -8,30 +9,48 @@ const jwt = require("jsonwebtoken");
 const transactionHistoryModule = require("../Utils/transactionHistory");
 const notificationModule = require("../Utils/NotificationHistory");
 
-// Function to fetch cryptocurrency price from CoinGecko API
-async function getCryptoPrice(coinSymbol) {
+// Example caching using a simple object
+const cache = {};
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Set up axios to automatically retry failed requests
+axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
+
+
+// Function to fetch cryptocurrency price from CoinGecko API with retry and rate limiting
+async function getCryptoPrice(coinSymbol, retryCount = 3) {
   try {
+    // Check if the value is in the cache
+    if (cache[coinSymbol]) {
+      return cache[coinSymbol];
+    }
+
     const apiUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${coinSymbol}&vs_currencies=usd`;
 
     // Send a GET request to the CoinGecko API
     const response = await axios.get(apiUrl);
 
-    if (
-      response.status === 200 &&
-      response.data[coinSymbol] &&
-      response.data[coinSymbol].usd
-    ) {
-      return response.data[coinSymbol].usd; // Return the USD price of the coin
+    if (response.status === 200 && response.data[coinSymbol] && response.data[coinSymbol].usd) {
+      const price = response.data[coinSymbol].usd;
+
+      // Cache the value for future use
+      cache[coinSymbol] = price;
+      return price;
     } else {
       throw new Error(`Failed to fetch cryptocurrency price for ${coinSymbol}`);
     }
   } catch (error) {
+    if (retryCount > 0 && error.response && error.response.status === 429) {
+      // Retry with an increasing delay
+      await delay(1000 * (4 - retryCount));
+      return getCryptoPrice(coinSymbol, retryCount - 1);
+    }
     console.error("Error fetching cryptocurrency price:", error.message);
-    throw new Error(
-      `Failed to fetch cryptocurrency price for ${coinSymbol}: ${error.message}`
-    );
+    throw new Error(`Failed to fetch cryptocurrency price for ${coinSymbol}: ${error.message}`);
   }
 }
+
 
 // Function to create transaction history
 async function createTransactionHistory(userId, status, message) {
@@ -573,14 +592,82 @@ router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
 });
 
 // Route to fetch notifications
-router.get("/v1/auth/notifications/:userId", async (req, res) => {
+router.get("/v1/auth/user-crypto-holdings/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    const notifications = await notificationModule.getNotifications(userId);
-    res.status(200).json(notifications);
+
+    // Fetch user's wallet
+    const wallet = await UserWallet.findOne({ userId });
+
+    if (!wallet) {
+      return res.status(400).json({ error: "User wallet not found" });
+    }
+
+    // Create an array to store the user's crypto data
+    const userCryptoData = [];
+
+    // Fetch the current price and additional data of cryptocurrencies from CoinGecko
+    const coinSymbols = supportedCoins.join(",");
+    const coinInfoResponse = await axios.get(
+      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinSymbols}`
+    );
+
+    if (coinInfoResponse.status !== 200) {
+      return res
+        .status(400)
+        .json({ error: "Failed to fetch cryptocurrency information" });
+    }
+
+    const coinInfoData = coinInfoResponse.data;
+
+    // Iterate through supported coins and add them to userCryptoData
+    for (const coinSymbol of supportedCoins) {
+      const cryptoHolding = wallet.cryptoHoldings.find(
+        (holding) => holding.coinSymbol === coinSymbol
+      );
+
+      // Calculate the equivalent amount
+      let amount = 0;
+
+      if (cryptoHolding) {
+        amount = cryptoHolding.amount;
+      }
+
+      // Get the coin information in the response data
+      const coinInfo = coinInfoData.find((info) => info.id === coinSymbol);
+
+      if (!coinInfo) {
+        return res
+          .status(400)
+          .json({ error: `Coin information not found for ${coinSymbol}` });
+      }
+
+      // Get the 24h price change percentage from CoinGecko API
+      const price_change_percentage_24h =
+        coinInfo.price_change_percentage_24h || 0;
+
+      // Calculate the fiat value (worth in USD)
+      const cryptoPriceInUSD = await getCryptoPrice(coinSymbol);
+      const fiatValue = amount * cryptoPriceInUSD;
+
+      // Create the user's crypto data object
+      const cryptoData = {
+        userId,
+        id: coinSymbol,
+        symbol: coinInfo.symbol || "",
+        name: coinSymbol.charAt(0).toUpperCase() + coinSymbol.slice(1),
+        amount,
+        fiatValue,
+        price_change_percentage_24h,
+      };
+
+      userCryptoData.push(cryptoData);
+    }
+
+    res.status(200).json(userCryptoData);
   } catch (error) {
-    console.error("Error fetching notifications:", error);
-    res.status(500).send({ error: "Internal server error" });
+    console.error("Error fetching user crypto holdings:", error.message);
+    res.status(500).json({ error: "Internal server error", details: error.message });
   }
 });
 
