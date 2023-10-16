@@ -38,7 +38,7 @@ app.use("/", userRoute);
 app.use("/", coinRoute);
 
 // ! Server Port 
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 const start = async () => {
   try {
