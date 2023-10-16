@@ -290,8 +290,8 @@ async function sendVerificationEmail(email, userName, verificationCode) {
       // ! Configure the email service provider details
       service: "gmail",
       host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USERNAME,
         pass: process.env.EMAIL_PASSWORD,
