@@ -289,6 +289,9 @@ async function sendVerificationEmail(email, userName, verificationCode) {
     const transporter = nodemailer.createTransport({
       // ! Configure the email service provider details
       service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_USERNAME,
         pass: process.env.EMAIL_PASSWORD,
@@ -312,11 +315,7 @@ async function sendVerificationEmail(email, userName, verificationCode) {
   `,
     };
 
-    console.log('Sending email to:', email);
-    console.log('Transporter config:', transporter.options);
-
     await transporter.sendMail(mailOptions);
-    console.log(`Verification email sent to ${email}`);
   } catch (error) {
     console.error("Error sending verification email:", error);
     throw new Error("Failed to send verification email");
@@ -467,7 +466,7 @@ async function sendResetPasswordEmail(email, userName, token) {
   `,
     };
 
-    await transporter.sendMail(mailOptions);
+    await transporter.sendMail({...mailOptions});
   } catch (error) {
     console.error("Error sending reset password email:", error);
     throw new Error("Failed to send reset password email");
