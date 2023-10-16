@@ -284,8 +284,9 @@ router.post("/v1/auth/resend-verification-code", async (req, res) => {
 });
 
 // ! Function to send the verification email
-function sendVerificationEmail(email, userName, verificationCode) {
-  const transporter = nodemailer.createTransport({
+async function sendVerificationEmail(email, userName, verificationCode) {
+  try {
+    const transporter = nodemailer.createTransport({
       // ! Configure the email service provider details
       service: "gmail",
       host: "smtp.gmail.com",
@@ -313,16 +314,16 @@ function sendVerificationEmail(email, userName, verificationCode) {
     </div>
   `,
     };
-  
-    transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log('Error in sending email  ' + error);
-      return true;
-    } else {
-     console.log('Email sent: ' + info.response);
-     return false;
-    }
-   });
+
+    console.log('Sending email to:', email);
+    console.log('Transporter config:', transporter.options);
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Verification email sent to ${email}`);
+  } catch (error) {
+    console.error("Error sending verification email:", error);
+    throw new Error("Failed to send verification email");
+  }
 }
 
 // ! Login route
