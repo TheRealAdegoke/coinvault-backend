@@ -1,5 +1,7 @@
 const User = require("../model/userModel");
 const UserWallet = require("../model/walletModel");
+const TransactionHistory = require("../model/transactionSchema")
+const Notification = require("../model/notificationSchema")
 const upload = require("../upload/upload")
 const express = require("express");
 const router = express.Router();
@@ -86,9 +88,21 @@ router.delete("/delete-account/:userId", async (req, res) => {
     }
 
     // ! Delete the userWallet associated with the user account
-    const userWallet = await UserWallet.findOne({ user: userId });
+    const userWallet = await UserWallet.findOne({ userId: userId });
     if (userWallet) {
-      await UserWallet.deleteOne({ user: userId });
+      await UserWallet.deleteOne({ userId: userId });
+    }
+
+    // ! Delete the user's transaction histories 
+    const transactionHistory = await TransactionHistory.findOne({userId: userId})
+    if (transactionHistory) {
+      await TransactionHistory.deleteOne({userId: userId})
+    }
+
+    // ! Delete the user's notification histories 
+    const notifications = await Notification.findOne({userId: userId})
+    if (notifications) {
+      await Notification.deleteOne({userId: userId})
     }
 
     // ! Delete the user account
